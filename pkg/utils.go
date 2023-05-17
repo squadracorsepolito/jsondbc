@@ -1,19 +1,19 @@
-package canconv
+package pkg
 
 import (
 	"os"
 	"strconv"
 )
 
-func FormatFloat(val float64) string {
+func formatFloat(val float64) string {
 	return strconv.FormatFloat(val, 'f', -1, 64)
 }
 
-func FormatString(val string) string {
+func formatString(val string) string {
 	return "\"" + val + "\""
 }
 
-func FormatUint(val uint32) string {
+func formatUint(val uint32) string {
 	return strconv.FormatUint(uint64(val), 10)
 }
 

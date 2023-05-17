@@ -1,10 +1,10 @@
-package canconv
+package pkg
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/FerroO2000/canconv/sym"
+	"github.com/FerroO2000/canconv/symbols"
 )
 
 const dbcDefNode = "Vector_XXX"
@@ -46,10 +46,10 @@ func NewDBCGenerator() *DBCGenerator {
 	return &DBCGenerator{}
 }
 
-func (g *DBCGenerator) Generate(model *Model, file *os.File) {
+func (g *DBCGenerator) Generate(model *CanModel, file *os.File) {
 	f := newFile(file)
 
-	f.print("VERSION", FormatString(model.Version))
+	f.print("VERSION", formatString(model.Version))
 
 	f.print(dbcHeaders)
 
@@ -73,7 +73,7 @@ func (g *DBCGenerator) genNodes(f *file, nodes map[string]Node) {
 		nodeNames = append(nodeNames, nodeName)
 	}
 
-	str := []string{sym.DBCNode}
+	str := []string{symbols.DBCNode}
 	str = append(str, nodeNames...)
 	f.print(str...)
 }
@@ -85,7 +85,7 @@ func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	if sender == "" {
 		sender = dbcDefNode
 	}
-	f.print(sym.DBCMessage, id, msgName+":", length, sender)
+	f.print(symbols.DBCMessage, id, msgName+":", length, sender)
 
 	for sigName, sig := range msg.Signals {
 		sig.Validate()
@@ -103,8 +103,8 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
 		valueType = "-"
 	}
 	byteDef := fmt.Sprintf("%d|%d@%d%s", sig.StartBit, sig.Size, byteOrder, valueType)
-	multiplier := fmt.Sprintf("(%s,%s)", FormatFloat(sig.Scale), FormatFloat(sig.Offset))
-	valueRange := fmt.Sprintf("[%s|%s]", FormatFloat(sig.Min), FormatFloat(sig.Max))
+	multiplier := fmt.Sprintf("(%s,%s)", formatFloat(sig.Scale), formatFloat(sig.Offset))
+	valueRange := fmt.Sprintf("[%s|%s]", formatFloat(sig.Min), formatFloat(sig.Max))
 	unit := fmt.Sprintf(`"%s"`, sig.Unit)
 
 	recivers := ""
@@ -120,31 +120,31 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
 		}
 	}
 
-	f.print("", sym.DBCSignal, sigName, ":", byteDef, multiplier, valueRange, unit, recivers)
+	f.print("", symbols.DBCSignal, sigName, ":", byteDef, multiplier, valueRange, unit, recivers)
 }
 
-func (g *DBCGenerator) genComments(f *file, m *Model) {
+func (g *DBCGenerator) genComments(f *file, m *CanModel) {
 	for nodeName, node := range m.Nodes {
 		if node.HasDescription() {
-			f.print(sym.DBCComment, sym.DBCNode, nodeName, FormatString(node.Description), ";")
+			f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
 		}
 	}
 	f.print()
 
 	for _, msg := range m.Messages {
 		if msg.HasDescription() {
-			f.print(sym.DBCComment, sym.DBCMessage, msg.FormatID(), FormatString(msg.Description), ";")
+			f.print(symbols.DBCComment, symbols.DBCMessage, msg.FormatID(), formatString(msg.Description), ";")
 		}
 
 		for sigName, sig := range msg.Signals {
 			if sig.HasDescription() {
-				f.print(sym.DBCComment, sym.DBCSignal, msg.FormatID(), sigName, FormatString(sig.Description), ";")
+				f.print(symbols.DBCComment, symbols.DBCSignal, msg.FormatID(), sigName, formatString(sig.Description), ";")
 			}
 		}
 	}
 }
 
-func (g *DBCGenerator) genBitmaps(f *file, m *Model) {
+func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 	for _, msg := range m.Messages {
 		for sigName, sig := range msg.Signals {
 			if sig.IsBitmap() {
@@ -152,13 +152,13 @@ func (g *DBCGenerator) genBitmaps(f *file, m *Model) {
 				first := true
 				for name, val := range sig.Bitmap {
 					if first {
-						bitmap += FormatUint(val) + " " + FormatString(name)
+						bitmap += formatUint(val) + " " + formatString(name)
 						first = false
 						continue
 					}
-					bitmap += " " + FormatUint(val) + " " + FormatString(name)
+					bitmap += " " + formatUint(val) + " " + formatString(name)
 				}
-				f.print(sym.DBCValue, msg.FormatID(), sigName, bitmap, ";")
+				f.print(symbols.DBCValue, msg.FormatID(), sigName, bitmap, ";")
 			}
 		}
 	}

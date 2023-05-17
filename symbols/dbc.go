@@ -1,4 +1,4 @@
-package sym
+package symbols
 
 const (
 	DBCNode    = "BU_"

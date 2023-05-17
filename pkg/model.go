@@ -1,8 +1,8 @@
-package canconv
+package pkg
 
 import "strconv"
 
-type Model struct {
+type CanModel struct {
 	Version  string             `json:"version"`
 	Nodes    map[string]Node    `json:"nodes"`
 	Messages map[string]Message `json:"messages"`
