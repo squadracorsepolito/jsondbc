@@ -1,0 +1,50 @@
+{
+    "version": "1.0",
+    "nodes": {
+        "Node1": {
+            "description": "Node1 desc"
+        },
+        "Node2": {}
+    },
+    "messages": {
+        "EEC1": {
+            "id": 2364540158,
+            "description": "desc 0",
+            "length": 8,
+            "sender": "",
+            "signals": {
+                "Engine_Speed": {
+                    "description": "desc 1",
+                    "startBit": 24,
+                    "size": 16,
+                    "bigEndian": false,
+                    "signed": false,
+                    "unit": "rpm",
+                    "recivers": [
+                        "Node1",
+                        "Node2"
+                    ],
+                    "scale": 0.125,
+                    "offset": 0,
+                    "min": 0,
+                    "max": 8031.875
+                },
+                "Engine_Status": {
+                    "description": "desc 2",
+                    "startBit": 0,
+                    "size": 2,
+                    "bigEndian": false,
+                    "signed": false,
+                    "unit": "status",
+                    "recivers": [],
+                    "bitmap": {
+                        "Off": 0,
+                        "Idle": 1,
+                        "Running": 2
+                    },
+                    "max": 2
+                }
+            }
+        }
+    }
+}
