@@ -19,3 +19,9 @@ jobs:
       - run: python3 -m pip install cantools
       - run: python3 -m cantools generate_c_source ./pippo.dbc
       - run: cat pippo.h
+      
+      - name: Archive DBC file
+        uses: actions/upload-artifact@v2
+        with:
+          name: dbc-artifact
+          path: pippo.dbc
