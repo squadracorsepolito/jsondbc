@@ -27,11 +27,11 @@ NS_ :
 	BA_DEF_DEF_REL_
 	BU_SG_REL_
 	BU_EV_REL_
-	BU_BO_REL_ 
+	BU_BO_REL_
 
-BS_:
+BU_:
 
-BU_: Node2 Node1
+BU_ : Node1 Node2
 
 BO_ 2364540158 EEC1: 8 Vector_XXX
  SG_ Engine_Speed : 24|16@0+ (0.125,0) [0|8031.875] "rpm" Node1,Node2
