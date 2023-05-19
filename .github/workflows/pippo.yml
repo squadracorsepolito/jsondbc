@@ -24,4 +24,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: dbc-artifact
-          path: pippo.h
+          path: pippo.h pippo.c
