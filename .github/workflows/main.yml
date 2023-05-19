@@ -1,0 +1,16 @@
+name: json-to-lib-converter
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'cantools/cantools' # Repository di destinazione
+      - name: Executing canconv...
+      - run: go un main.go convert --in data/model.json --out data/pippo.dbc
+
+      - name: Executing cantools...
+      - run: |
+          cd cantools
+          python3 -m cantools generate_c_source data/pippo.dbc
