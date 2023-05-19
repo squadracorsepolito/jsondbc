@@ -34,13 +34,14 @@ BU_:
 BU_ : Node1 Node2
 
 BO_ 2364540158 EEC1: 8 Vector_XXX
- SG_ Engine_Speed : 24|16@0+ (0.125,0) [0|8031.875] "rpm" Node1,Node2
- SG_ Engine_Status : 0|2@0+ (1,0) [0|2] "status" Vector_XXX
+	 SG_ Engine_Speed : 24|16@0+ (0.125,0) [0|8031.875] "rpm" Node1,Node2
+	 SG_ Engine_Status : 0|2@0+ (1,0) [0|2] "status" Vector_XXX
 
 CM_ BU_ Node1 "Node1 desc" ;
+CM_ BU_ Node2 "Node2 desc" ;
 
 CM_ BO_ 2364540158 "desc 0" ;
-CM_ SG_ 2364540158 Engine_Speed "desc 1" ;
 CM_ SG_ 2364540158 Engine_Status "desc 2" ;
+CM_ SG_ 2364540158 Engine_Speed "desc 1" ;
 
 VAL_ 2364540158 Engine_Status 0 "Off" 1 "Idle" 2 "Running" ;

@@ -1,0 +1,52 @@
+{
+    "version": "1.0",
+    "nodes": {},
+    "messages": {
+        "OBD2": {
+            "id": 2024,
+            "length": 8,
+            "signals": {
+                "Service": {
+                    "startBit": 11,
+                    "size": 4,
+                    "scale": 1,
+                    "max": 15,
+                    "muxGroup": {
+                        "S1": {
+                            "muxSwitch": 1,
+                            "startBit": 23,
+                            "size": 8,
+                            "scale": 1,
+                            "max": 255,
+                            "muxGroup": {
+                                "VehicleSpeed": {
+                                    "muxSwitch": 13,
+                                    "startBit": 31,
+                                    "size": 8,
+                                    "scale": 1,
+                                    "max": 255,
+                                    "unit": "km/h"
+                                },
+                                "ThrottlePosition": {
+                                    "muxSwitch": 17,
+                                    "startBit": 31,
+                                    "size": 8,
+                                    "scale": 0.39216,
+                                    "max": 100,
+                                    "unit": "%"
+                                }
+                            }
+                        },
+                        "S2": {
+                            "muxSwitch": 2,
+                            "startBit": 23,
+                            "size": 8,
+                            "scale": 1,
+                            "max": 255
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

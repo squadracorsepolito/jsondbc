@@ -33,6 +33,13 @@ func (f *file) print(str ...string) {
 			tmp += s
 			continue
 		}
+		if len(s) == 0 {
+			continue
+		}
+		if str[i-1] == "\t" {
+			tmp += s
+			continue
+		}
 		tmp += " " + s
 	}
 	_, err := f.f.WriteString(tmp + "\n")

@@ -4,9 +4,9 @@ import "strconv"
 
 // CanModel represents the CAN model
 type CanModel struct {
-	Version  string             `json:"version"`
-	Nodes    map[string]Node    `json:"nodes"`
-	Messages map[string]Message `json:"messages"`
+	Version  string              `json:"version"`
+	Nodes    map[string]*Node    `json:"nodes"`
+	Messages map[string]*Message `json:"messages"`
 }
 
 // Node represents a CAN node
@@ -21,11 +21,11 @@ func (n *Node) HasDescription() bool {
 
 // Message represents a CAN message
 type Message struct {
-	ID          uint32            `json:"id"`
-	Description string            `json:"description"`
-	Length      uint32            `json:"length"`
-	Sender      string            `json:"sender"`
-	Signals     map[string]Signal `json:"signals"`
+	ID          uint32             `json:"id"`
+	Description string             `json:"description"`
+	Length      uint32             `json:"length"`
+	Sender      string             `json:"sender"`
+	Signals     map[string]*Signal `json:"signals"`
 }
 
 // HasDescription returns true if the message has a description
@@ -52,6 +52,8 @@ type Signal struct {
 	Min         float64           `json:"min"`
 	Max         float64           `json:"max"`
 	Bitmap      map[string]uint32 `json:"bitmap"`
+	MuxGroup    map[string]Signal `json:"muxGroup"`
+	MuxSwitch   uint32            `json:"MuxSwitch"`
 }
 
 // Validate validates the signal
@@ -64,6 +66,11 @@ func (s *Signal) Validate() {
 // IsBitmap returns true if the signal is a bitmap
 func (s *Signal) IsBitmap() bool {
 	return len(s.Bitmap) > 0
+}
+
+// IsMultiplexor returns true if the signal is a multiplexor
+func (s *Signal) IsMultiplexor() bool {
+	return len(s.MuxGroup) > 0
 }
 
 // HasDescription returns true if the signal has a description

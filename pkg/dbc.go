@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/FerroO2000/canconv/symbols"
+	"github.com/FerroO2000/canconv/pkg/symbols"
 )
 
-const dbcDefNode = "Vector_XXX"
+const dbcDefNode = "Vector__XXX"
 
 const dbcHeaders = `
 NS_ :
@@ -38,8 +38,6 @@ NS_ :
 	BU_SG_REL_
 	BU_EV_REL_
 	BU_BO_REL_
-
-BU_:
 `
 
 // DBCGenerator is a struct that wraps the methods to generate the DBC file.
@@ -59,21 +57,20 @@ func (g *DBCGenerator) Generate(model *CanModel, file *os.File) {
 	f.print(dbcHeaders)
 
 	g.genNodes(f, model.Nodes)
-	f.print()
 
 	for msgName, msg := range model.Messages {
-		g.genMessage(f, msgName, &msg)
+		g.genMessage(f, msgName, msg)
 	}
-	f.print()
 
 	g.genComments(f, model)
-	f.print()
 
 	g.genBitmaps(f, model)
+
+	g.genMuxGroup(f, model.Messages)
 }
 
 // genNodes generates the node definitions of the DBC file.
-func (g *DBCGenerator) genNodes(f *file, nodes map[string]Node) {
+func (g *DBCGenerator) genNodes(f *file, nodes map[string]*Node) {
 	nodeNames := []string{}
 	for nodeName := range nodes {
 		nodeNames = append(nodeNames, nodeName)
@@ -82,6 +79,7 @@ func (g *DBCGenerator) genNodes(f *file, nodes map[string]Node) {
 	str := []string{symbols.DBCNode, ":"}
 	str = append(str, nodeNames...)
 	f.print(str...)
+	f.print()
 }
 
 // genMessage generates the message definitions of the DBC file.
@@ -96,12 +94,14 @@ func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 
 	for sigName, sig := range msg.Signals {
 		sig.Validate()
-		g.genSignal(f, sigName, &sig)
+		g.genSignal(f, sigName, sig, false)
 	}
+
+	f.print()
 }
 
 // genSignal generates the signal definitions of the DBC file.
-func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
+func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
 	byteOrder := 0
 	if sig.BigEndian {
 		byteOrder = 1
@@ -128,7 +128,19 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
 		}
 	}
 
-	f.print("", symbols.DBCSignal, sigName, ":", byteDef, multiplier, valueRange, unit, receivers)
+	muxStr := ""
+	if multiplexed {
+		muxStr = "m" + formatUint(sig.MuxSwitch)
+	}
+	if sig.IsMultiplexor() {
+		muxStr += "M"
+
+		for muxSigName, muxSig := range sig.MuxGroup {
+			g.genSignal(f, muxSigName, &muxSig, true)
+		}
+	}
+
+	f.print("\t", symbols.DBCSignal, sigName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
 // genComments generates the comments of the DBC file.
@@ -136,24 +148,25 @@ func (g *DBCGenerator) genComments(f *file, m *CanModel) {
 	for nodeName, node := range m.Nodes {
 		if node.HasDescription() {
 			f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
+			f.print()
 		}
 	}
-	f.print()
 
 	for _, msg := range m.Messages {
-		if msg.HasDescription() {
-			f.print(symbols.DBCComment, symbols.DBCMessage, msg.FormatID(), formatString(msg.Description), ";")
-		}
-
 		for sigName, sig := range msg.Signals {
 			if sig.HasDescription() {
 				f.print(symbols.DBCComment, symbols.DBCSignal, msg.FormatID(), sigName, formatString(sig.Description), ";")
 			}
 		}
+
+		if msg.HasDescription() {
+			f.print(symbols.DBCComment, symbols.DBCMessage, msg.FormatID(), formatString(msg.Description), ";")
+			f.print()
+		}
 	}
 }
 
-// genBitmaps generates the 'VAL_' of the DBC file.
+// genBitmaps generates the bitmats of the DBC file.
 func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 	for _, msg := range m.Messages {
 		for sigName, sig := range msg.Signals {
@@ -172,4 +185,28 @@ func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 			}
 		}
 	}
+}
+
+// genMuxGroup generates the multiplexed signals of the DBC file.
+func (g *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
+	for _, msg := range messages {
+		for sigName, sig := range msg.Signals {
+			if sig.IsMultiplexor() {
+				for muxSigName, muxSig := range sig.MuxGroup {
+					g.genMuxSignal(f, msg.FormatID(), sigName, muxSigName, &muxSig)
+				}
+			}
+		}
+	}
+}
+
+// genMuxSignal generates a multiplexed signal value.
+func (g *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
+	if sig.IsMultiplexor() {
+		for innSigName, innSig := range sig.MuxGroup {
+			g.genMuxSignal(f, msgID, sigName, innSigName, &innSig)
+		}
+	}
+
+	f.print(symbols.DBCMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
 }
