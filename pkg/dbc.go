@@ -42,12 +42,15 @@ NS_ :
 BU_:
 `
 
+// DBCGenerator is a struct that wraps the methods to generate the DBC file.
 type DBCGenerator struct{}
 
+// NewDBCGenerator returns a new DBCGenerator.
 func NewDBCGenerator() *DBCGenerator {
 	return &DBCGenerator{}
 }
 
+// Generate generates the DBC file.
 func (g *DBCGenerator) Generate(model *CanModel, file *os.File) {
 	f := newFile(file)
 
@@ -69,6 +72,7 @@ func (g *DBCGenerator) Generate(model *CanModel, file *os.File) {
 	g.genBitmaps(f, model)
 }
 
+// genNodes generates the node definitions of the DBC file.
 func (g *DBCGenerator) genNodes(f *file, nodes map[string]Node) {
 	nodeNames := []string{}
 	for nodeName := range nodes {
@@ -80,6 +84,7 @@ func (g *DBCGenerator) genNodes(f *file, nodes map[string]Node) {
 	f.print(str...)
 }
 
+// genMessage generates the message definitions of the DBC file.
 func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	id := fmt.Sprintf("%d", msg.ID)
 	length := fmt.Sprintf("%d", msg.Length)
@@ -95,6 +100,7 @@ func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	}
 }
 
+// genSignal generates the signal definitions of the DBC file.
 func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
 	byteOrder := 0
 	if sig.BigEndian {
@@ -125,6 +131,7 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
 	f.print("", symbols.DBCSignal, sigName, ":", byteDef, multiplier, valueRange, unit, recivers)
 }
 
+// genComments generates the comments of the DBC file.
 func (g *DBCGenerator) genComments(f *file, m *CanModel) {
 	for nodeName, node := range m.Nodes {
 		if node.HasDescription() {
@@ -146,6 +153,7 @@ func (g *DBCGenerator) genComments(f *file, m *CanModel) {
 	}
 }
 
+// genBitmaps generates the 'VAL_' of the DBC file.
 func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 	for _, msg := range m.Messages {
 		for sigName, sig := range msg.Signals {

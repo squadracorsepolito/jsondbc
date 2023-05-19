@@ -1,3 +1,4 @@
+// Package pkg provides utilities for the cli
 package pkg
 
 import (
