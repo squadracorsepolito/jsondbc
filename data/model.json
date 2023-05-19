@@ -4,7 +4,9 @@
         "Node1": {
             "description": "Node1 desc"
         },
-        "Node2": {}
+        "Node2": {
+            "description": "Node2 desc"
+        }
     },
     "messages": {
         "EEC1": {
@@ -20,7 +22,7 @@
                     "bigEndian": false,
                     "signed": false,
                     "unit": "rpm",
-                    "recivers": [
+                    "receivers": [
                         "Node1",
                         "Node2"
                     ],
@@ -36,7 +38,7 @@
                     "bigEndian": false,
                     "signed": false,
                     "unit": "status",
-                    "recivers": [],
+                    "receivers": [],
                     "bitmap": {
                         "Off": 0,
                         "Idle": 1,

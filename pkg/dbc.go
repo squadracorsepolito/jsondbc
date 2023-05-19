@@ -109,20 +109,20 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal) {
 	valueRange := fmt.Sprintf("[%s|%s]", formatFloat(sig.Min), formatFloat(sig.Max))
 	unit := fmt.Sprintf(`"%s"`, sig.Unit)
 
-	recivers := ""
-	if len(sig.Recivers) == 0 {
-		recivers = dbcDefNode
+	receivers := ""
+	if len(sig.Receivers) == 0 {
+		receivers = dbcDefNode
 	} else {
-		for i, r := range sig.Recivers {
+		for i, r := range sig.Receivers {
 			if i == 0 {
-				recivers += r
+				receivers += r
 				continue
 			}
-			recivers += "," + r
+			receivers += "," + r
 		}
 	}
 
-	f.print("", symbols.DBCSignal, sigName, ":", byteDef, multiplier, valueRange, unit, recivers)
+	f.print("", symbols.DBCSignal, sigName, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
 func (g *DBCGenerator) genComments(f *file, m *CanModel) {

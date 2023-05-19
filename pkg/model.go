@@ -39,7 +39,7 @@ type Signal struct {
 	BigEndian   bool              `json:"bigEndian"`
 	Signed      bool              `json:"signed"`
 	Unit        string            `json:"unit"`
-	Recivers    []string          `json:"recivers"`
+	Receivers   []string          `json:"receivers"`
 	Scale       float64           `json:"scale"`
 	Offset      float64           `json:"offset"`
 	Min         float64           `json:"min"`
