@@ -6,6 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' 
       - uses: actions/setup-go@v4
         with:
           go-version: '^1.20.1'
@@ -13,3 +16,6 @@ jobs:
       - run: ls
       - run: ./canconv convert --in data/model.json --out pippo.dbc
       - run: cat pippo.dbc
+      - run: python3 -m pip install cantools
+      - run: python3 -m cantools generate_c_source ./pippo.dbc
+      - run: cat pippo.h
