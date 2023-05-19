@@ -37,7 +37,9 @@ NS_ :
 	BA_DEF_DEF_REL_
 	BU_SG_REL_
 	BU_EV_REL_
-	BU_BO_REL_ 
+	BU_BO_REL_
+
+BU_:
 `
 
 type DBCGenerator struct{}
@@ -73,7 +75,7 @@ func (g *DBCGenerator) genNodes(f *file, nodes map[string]Node) {
 		nodeNames = append(nodeNames, nodeName)
 	}
 
-	str := []string{symbols.DBCNode}
+	str := []string{symbols.DBCNode, ":"}
 	str = append(str, nodeNames...)
 	f.print(str...)
 }
