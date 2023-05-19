@@ -21,6 +21,8 @@ const (
 	fileDBC = "dbc"
 )
 
+// convert is the handler for the convert command.
+// It opens the input file, reads it and converts it to the specified extension.
 func convert() error {
 	jsonFile, err := os.Open(inputFile)
 	if err != nil {
@@ -68,6 +70,7 @@ var ConvertCmd = &cobra.Command{
 	},
 }
 
+// init initializes the flags for the convert command.
 func init() {
 	ConvertCmd.Flags().StringVar(&inputFile, "in", "", "Sets the input file")
 	if err := ConvertCmd.MarkFlagFilename("in", "json"); err != nil {
