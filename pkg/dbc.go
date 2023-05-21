@@ -38,6 +38,8 @@ NS_ :
 	BU_SG_REL_
 	BU_EV_REL_
 	BU_BO_REL_
+
+BS_ :
 `
 
 // DBCGenerator is a struct that wraps the methods to generate the DBC file.
@@ -53,20 +55,16 @@ func (g *DBCGenerator) Generate(model *CanModel, file *os.File) {
 	f := newFile(file)
 
 	f.print("VERSION", formatString(model.Version))
-
 	f.print(dbcHeaders)
-
 	g.genNodes(f, model.Nodes)
 
 	for msgName, msg := range model.Messages {
 		g.genMessage(f, msgName, msg)
 	}
 
-	g.genComments(f, model)
-
-	g.genBitmaps(f, model)
-
 	g.genMuxGroup(f, model.Messages)
+	g.genBitmaps(f, model)
+	g.genComments(f, model)
 }
 
 // genNodes generates the node definitions of the DBC file.
@@ -93,7 +91,6 @@ func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	f.print(symbols.DBCMessage, id, msgName+":", length, sender)
 
 	for sigName, sig := range msg.Signals {
-		sig.Validate()
 		g.genSignal(f, sigName, sig, false)
 	}
 
@@ -136,34 +133,35 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplex
 		muxStr += "M"
 
 		for muxSigName, muxSig := range sig.MuxGroup {
-			g.genSignal(f, muxSigName, &muxSig, true)
+			g.genSignal(f, muxSigName, muxSig, true)
 		}
 	}
 
 	f.print("\t", symbols.DBCSignal, sigName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
-// genComments generates the comments of the DBC file.
-func (g *DBCGenerator) genComments(f *file, m *CanModel) {
-	for nodeName, node := range m.Nodes {
-		if node.HasDescription() {
-			f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
-			f.print()
-		}
-	}
-
-	for _, msg := range m.Messages {
+// genMuxGroup generates the multiplexed signals of the DBC file.
+func (g *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
+	for _, msg := range messages {
 		for sigName, sig := range msg.Signals {
-			if sig.HasDescription() {
-				f.print(symbols.DBCComment, symbols.DBCSignal, msg.FormatID(), sigName, formatString(sig.Description), ";")
+			if sig.IsMultiplexor() {
+				for muxSigName, muxSig := range sig.MuxGroup {
+					g.genMuxSignal(f, msg.FormatID(), sigName, muxSigName, muxSig)
+				}
 			}
 		}
+	}
+}
 
-		if msg.HasDescription() {
-			f.print(symbols.DBCComment, symbols.DBCMessage, msg.FormatID(), formatString(msg.Description), ";")
-			f.print()
+// genMuxSignal generates a multiplexed signal value.
+func (g *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
+	if sig.IsMultiplexor() {
+		for innSigName, innSig := range sig.MuxGroup {
+			g.genMuxSignal(f, msgID, sigName, innSigName, innSig)
 		}
 	}
+
+	f.print(symbols.DBCMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
 }
 
 // genBitmaps generates the bitmats of the DBC file.
@@ -187,26 +185,45 @@ func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 	}
 }
 
-// genMuxGroup generates the multiplexed signals of the DBC file.
-func (g *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
-	for _, msg := range messages {
-		for sigName, sig := range msg.Signals {
-			if sig.IsMultiplexor() {
-				for muxSigName, muxSig := range sig.MuxGroup {
-					g.genMuxSignal(f, msg.FormatID(), sigName, muxSigName, &muxSig)
-				}
-			}
-		}
+// genComments generates the comments of the DBC file.
+func (g *DBCGenerator) genComments(f *file, m *CanModel) {
+	for nodeName, node := range m.Nodes {
+		g.genNodeComment(f, nodeName, node)
+	}
+
+	for _, msg := range m.Messages {
+		g.genMessageComment(f, msg)
 	}
 }
 
-// genMuxSignal generates a multiplexed signal value.
-func (g *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
-	if sig.IsMultiplexor() {
-		for innSigName, innSig := range sig.MuxGroup {
-			g.genMuxSignal(f, msgID, sigName, innSigName, &innSig)
-		}
+// genNodeComment generates the comment of a node.
+func (g *DBCGenerator) genNodeComment(f *file, nodeName string, node *Node) {
+	if node.HasDescription() {
+		f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
+	}
+}
+
+// genMessageComment generates the comment of a message.
+func (g *DBCGenerator) genMessageComment(f *file, msg *Message) {
+	msgID := msg.FormatID()
+	if msg.HasDescription() {
+		f.print(symbols.DBCComment, symbols.DBCMessage, msgID, formatString(msg.Description), ";")
 	}
 
-	f.print(symbols.DBCMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
+	for sigName, sig := range msg.Signals {
+		g.genSignalComment(f, msgID, sigName, sig)
+	}
+}
+
+// genSignalComment generates the comment of a signal.
+func (g *DBCGenerator) genSignalComment(f *file, msgID, sigName string, sig *Signal) {
+	if sig.HasDescription() {
+		f.print(symbols.DBCComment, symbols.DBCSignal, msgID, sigName, formatString(sig.Description), ";")
+	}
+
+	if sig.IsMultiplexor() {
+		for muxSigName, muxSig := range sig.MuxGroup {
+			g.genSignalComment(f, msgID, muxSigName, muxSig)
+		}
+	}
 }

@@ -24,4 +24,5 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(convert.ConvertCmd)
+	rootCmd.AddCommand(versionCmd)
 }

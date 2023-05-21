@@ -17,9 +17,9 @@
             "signals": {
                 "Engine_Speed": {
                     "description": "desc 1",
-                    "startBit": 24,
+                    "start_bit": 24,
                     "size": 16,
-                    "bigEndian": false,
+                    "big_endian": false,
                     "signed": false,
                     "unit": "rpm",
                     "receivers": [
@@ -33,9 +33,9 @@
                 },
                 "Engine_Status": {
                     "description": "desc 2",
-                    "startBit": 0,
+                    "start_bit": 0,
                     "size": 2,
-                    "bigEndian": false,
+                    "big_endian": false,
                     "signed": false,
                     "unit": "status",
                     "receivers": [],

@@ -1,35 +1,45 @@
 {
     "version": "1.0",
-    "nodes": {},
+    "nodes": {
+        "Node1": {
+            "description": "Node1 desc"
+        }
+    },
     "messages": {
         "OBD2": {
             "id": 2024,
+            "sender": "Node1",
+            "description": "desc OBD2",
             "length": 8,
             "signals": {
                 "Service": {
-                    "startBit": 11,
+                    "description": "desc Service",
+                    "start_bit": 11,
                     "size": 4,
                     "scale": 1,
                     "max": 15,
-                    "muxGroup": {
+                    "mux_group": {
                         "S1": {
-                            "muxSwitch": 1,
-                            "startBit": 23,
+                            "description": "desc S1",
+                            "mux_switch": 1,
+                            "start_bit": 23,
                             "size": 8,
                             "scale": 1,
                             "max": 255,
-                            "muxGroup": {
+                            "mux_group": {
                                 "VehicleSpeed": {
-                                    "muxSwitch": 13,
-                                    "startBit": 31,
+                                    "description": "desc VehicleSpeed",
+                                    "mux_switch": 13,
+                                    "start_bit": 31,
                                     "size": 8,
                                     "scale": 1,
                                     "max": 255,
                                     "unit": "km/h"
                                 },
                                 "ThrottlePosition": {
-                                    "muxSwitch": 17,
-                                    "startBit": 31,
+                                    "description": "desc ThrottlePosition",
+                                    "mux_switch": 17,
+                                    "start_bit": 31,
                                     "size": 8,
                                     "scale": 0.39216,
                                     "max": 100,
@@ -38,8 +48,9 @@
                             }
                         },
                         "S2": {
-                            "muxSwitch": 2,
-                            "startBit": 23,
+                            "description": "desc S2",
+                            "mux_switch": 2,
+                            "start_bit": 23,
                             "size": 8,
                             "scale": 1,
                             "max": 255

@@ -40,6 +40,10 @@ func convert() error {
 		return err
 	}
 
+	if err := model.Validate(); err != nil {
+		return err
+	}
+
 	if outputFile == "" {
 		outputFile = inputFile[:len(inputFile)-len("json")-1] + "." + extension
 	}
