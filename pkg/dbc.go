@@ -1,8 +1,11 @@
 package pkg
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"regexp"
 
 	"github.com/FerroO2000/canconv/pkg/symbols"
 )
@@ -51,24 +54,24 @@ func NewDBCGenerator() *DBCGenerator {
 }
 
 // Generate generates the DBC file.
-func (g *DBCGenerator) Generate(model *CanModel, file *os.File) {
+func (dbc *DBCGenerator) Generate(model *CanModel, file *os.File) {
 	f := newFile(file)
 
 	f.print("VERSION", formatString(model.Version))
 	f.print(dbcHeaders)
-	g.genNodes(f, model.Nodes)
+	dbc.genNodes(f, model.Nodes)
 
 	for msgName, msg := range model.Messages {
-		g.genMessage(f, msgName, msg)
+		dbc.genMessage(f, msgName, msg)
 	}
 
-	g.genMuxGroup(f, model.Messages)
-	g.genBitmaps(f, model)
-	g.genComments(f, model)
+	dbc.genMuxGroup(f, model.Messages)
+	dbc.genBitmaps(f, model)
+	dbc.genComments(f, model)
 }
 
 // genNodes generates the node definitions of the DBC file.
-func (g *DBCGenerator) genNodes(f *file, nodes map[string]*Node) {
+func (dbc *DBCGenerator) genNodes(f *file, nodes map[string]*Node) {
 	nodeNames := []string{}
 	for nodeName := range nodes {
 		nodeNames = append(nodeNames, nodeName)
@@ -81,7 +84,7 @@ func (g *DBCGenerator) genNodes(f *file, nodes map[string]*Node) {
 }
 
 // genMessage generates the message definitions of the DBC file.
-func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
+func (dbc *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	id := fmt.Sprintf("%d", msg.ID)
 	length := fmt.Sprintf("%d", msg.Length)
 	sender := msg.Sender
@@ -91,14 +94,14 @@ func (g *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	f.print(symbols.DBCMessage, id, msgName+":", length, sender)
 
 	for sigName, sig := range msg.Signals {
-		g.genSignal(f, sigName, sig, false)
+		dbc.genSignal(f, sigName, sig, false)
 	}
 
 	f.print()
 }
 
 // genSignal generates the signal definitions of the DBC file.
-func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
+func (dbc *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
 	byteOrder := 0
 	if sig.BigEndian {
 		byteOrder = 1
@@ -133,7 +136,7 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplex
 		muxStr += "M"
 
 		for muxSigName, muxSig := range sig.MuxGroup {
-			g.genSignal(f, muxSigName, muxSig, true)
+			dbc.genSignal(f, muxSigName, muxSig, true)
 		}
 	}
 
@@ -141,12 +144,12 @@ func (g *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplex
 }
 
 // genMuxGroup generates the multiplexed signals of the DBC file.
-func (g *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
+func (dbc *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
 	for _, msg := range messages {
 		for sigName, sig := range msg.Signals {
 			if sig.IsMultiplexor() {
 				for muxSigName, muxSig := range sig.MuxGroup {
-					g.genMuxSignal(f, msg.FormatID(), sigName, muxSigName, muxSig)
+					dbc.genMuxSignal(f, msg.FormatID(), sigName, muxSigName, muxSig)
 				}
 			}
 		}
@@ -154,10 +157,10 @@ func (g *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
 }
 
 // genMuxSignal generates a multiplexed signal value.
-func (g *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
+func (dbc *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
 	if sig.IsMultiplexor() {
 		for innSigName, innSig := range sig.MuxGroup {
-			g.genMuxSignal(f, msgID, sigName, innSigName, innSig)
+			dbc.genMuxSignal(f, msgID, sigName, innSigName, innSig)
 		}
 	}
 
@@ -165,7 +168,7 @@ func (g *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, 
 }
 
 // genBitmaps generates the bitmats of the DBC file.
-func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
+func (dbc *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 	for _, msg := range m.Messages {
 		for sigName, sig := range msg.Signals {
 			if sig.IsBitmap() {
@@ -186,44 +189,78 @@ func (g *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 }
 
 // genComments generates the comments of the DBC file.
-func (g *DBCGenerator) genComments(f *file, m *CanModel) {
+func (dbc *DBCGenerator) genComments(f *file, m *CanModel) {
 	for nodeName, node := range m.Nodes {
-		g.genNodeComment(f, nodeName, node)
+		dbc.genNodeComment(f, nodeName, node)
 	}
 
 	for _, msg := range m.Messages {
-		g.genMessageComment(f, msg)
+		dbc.genMessageComment(f, msg)
 	}
 }
 
 // genNodeComment generates the comment of a node.
-func (g *DBCGenerator) genNodeComment(f *file, nodeName string, node *Node) {
+func (dbc *DBCGenerator) genNodeComment(f *file, nodeName string, node *Node) {
 	if node.HasDescription() {
 		f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
 	}
 }
 
 // genMessageComment generates the comment of a message.
-func (g *DBCGenerator) genMessageComment(f *file, msg *Message) {
+func (dbc *DBCGenerator) genMessageComment(f *file, msg *Message) {
 	msgID := msg.FormatID()
 	if msg.HasDescription() {
 		f.print(symbols.DBCComment, symbols.DBCMessage, msgID, formatString(msg.Description), ";")
 	}
 
 	for sigName, sig := range msg.Signals {
-		g.genSignalComment(f, msgID, sigName, sig)
+		dbc.genSignalComment(f, msgID, sigName, sig)
 	}
 }
 
 // genSignalComment generates the comment of a signal.
-func (g *DBCGenerator) genSignalComment(f *file, msgID, sigName string, sig *Signal) {
+func (dbc *DBCGenerator) genSignalComment(f *file, msgID, sigName string, sig *Signal) {
 	if sig.HasDescription() {
 		f.print(symbols.DBCComment, symbols.DBCSignal, msgID, sigName, formatString(sig.Description), ";")
 	}
 
 	if sig.IsMultiplexor() {
 		for muxSigName, muxSig := range sig.MuxGroup {
-			g.genSignalComment(f, msgID, muxSigName, muxSig)
+			dbc.genSignalComment(f, msgID, muxSigName, muxSig)
 		}
 	}
+}
+
+func (dbc *DBCGenerator) Read(file *os.File) *CanModel {
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanLines)
+	lines := []string{}
+
+	for fileScanner.Scan() {
+		lines = append(lines, fileScanner.Text())
+	}
+
+	m := &CanModel{}
+
+	version, _ := dbc.readVersion(lines)
+	m.Version = version
+
+	return m
+}
+
+var dbcVersionRegex = regexp.MustCompile(`^(VERSION) *\"(?P<version>.+)\"`)
+
+func (dbc *DBCGenerator) readVersion(lines []string) (string, error) {
+	for _, line := range lines {
+		match := dbcVersionRegex.FindAllStringSubmatch(line, -1)
+		if len(match) == 0 {
+			continue
+		}
+
+		versionIndex := dbcVersionRegex.SubexpIndex("version")
+
+		log.Print(match[0][versionIndex])
+	}
+
+	return "", nil
 }
