@@ -18,6 +18,18 @@ func formatUint(val uint32) string {
 	return strconv.FormatUint(uint64(val), 10)
 }
 
+func parseUint(val string) (uint32, error) {
+	res, err := strconv.ParseUint(val, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(res), nil
+}
+
+func parseFloat(val string) (float64, error) {
+	return strconv.ParseFloat(val, 64)
+}
+
 type file struct {
 	f *os.File
 }

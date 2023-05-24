@@ -1,11 +1,8 @@
 package pkg
 
 import (
-	"bufio"
 	"fmt"
-	"log"
 	"os"
-	"regexp"
 
 	"github.com/FerroO2000/canconv/pkg/symbols"
 )
@@ -229,38 +226,4 @@ func (dbc *DBCGenerator) genSignalComment(f *file, msgID, sigName string, sig *S
 			dbc.genSignalComment(f, msgID, muxSigName, muxSig)
 		}
 	}
-}
-
-func (dbc *DBCGenerator) Read(file *os.File) *CanModel {
-	fileScanner := bufio.NewScanner(file)
-	fileScanner.Split(bufio.ScanLines)
-	lines := []string{}
-
-	for fileScanner.Scan() {
-		lines = append(lines, fileScanner.Text())
-	}
-
-	m := &CanModel{}
-
-	version, _ := dbc.readVersion(lines)
-	m.Version = version
-
-	return m
-}
-
-var dbcVersionRegex = regexp.MustCompile(`^(VERSION) *\"(?P<version>.+)\"`)
-
-func (dbc *DBCGenerator) readVersion(lines []string) (string, error) {
-	for _, line := range lines {
-		match := dbcVersionRegex.FindAllStringSubmatch(line, -1)
-		if len(match) == 0 {
-			continue
-		}
-
-		versionIndex := dbcVersionRegex.SubexpIndex("version")
-
-		log.Print(match[0][versionIndex])
-	}
-
-	return "", nil
 }

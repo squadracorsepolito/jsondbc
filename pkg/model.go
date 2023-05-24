@@ -28,7 +28,7 @@ func (c *CanModel) Validate() error {
 
 // Node represents a CAN node.
 type Node struct {
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 }
 
 func (n *Node) validate() error {
@@ -43,10 +43,12 @@ func (n *Node) HasDescription() bool {
 // Message represents a CAN message.
 type Message struct {
 	ID          uint32             `json:"id"`
-	Description string             `json:"description"`
+	Description string             `json:"description,omitempty"`
 	Length      uint32             `json:"length"`
-	Sender      string             `json:"sender"`
+	Sender      string             `json:"sender,omitempty"`
 	Signals     map[string]*Signal `json:"signals"`
+
+	name string
 }
 
 func (m *Message) validate() error {
@@ -71,20 +73,24 @@ func (m *Message) FormatID() string {
 
 // Signal represents a CAN signal in a message.
 type Signal struct {
-	Description string             `json:"description"`
+	Description string             `json:"description,omitempty"`
+	MuxSwitch   uint32             `json:"mux_switch,omitempty"`
 	StartBit    uint32             `json:"start_bit"`
 	Size        uint32             `json:"size"`
-	BigEndian   bool               `json:"big_endian"`
-	Signed      bool               `json:"signed"`
-	Unit        string             `json:"unit"`
-	Receivers   []string           `json:"receivers"`
+	BigEndian   bool               `json:"big_endian,omitempty"`
+	Signed      bool               `json:"signed,omitempty"`
+	Unit        string             `json:"unit,omitempty"`
+	Receivers   []string           `json:"receivers,omitempty"`
 	Scale       float64            `json:"scale"`
 	Offset      float64            `json:"offset"`
 	Min         float64            `json:"min"`
 	Max         float64            `json:"max"`
-	Bitmap      map[string]uint32  `json:"bitmap"`
-	MuxGroup    map[string]*Signal `json:"mux_group"`
-	MuxSwitch   uint32             `json:"Mux_switch"`
+	Bitmap      map[string]uint32  `json:"bitmap,omitempty"`
+	MuxGroup    map[string]*Signal `json:"mux_group,omitempty"`
+
+	name          string
+	isMultiplexor bool
+	isMultiplexed bool
 }
 
 func (s *Signal) validate() error {
