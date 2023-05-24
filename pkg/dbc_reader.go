@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -13,17 +12,54 @@ import (
 	"github.com/FerroO2000/canconv/pkg/symbols"
 )
 
-var errRegexNoMatch = errors.New("no match")
+var dbcVersionRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s) *\"(?P<version>.+)\"$`, symbols.DBCVersion))
 
-func applyRegex(r *regexp.Regexp, str string) ([]string, error) {
-	matches := r.FindAllStringSubmatch(str, -1)
-	if len(matches) == 0 {
-		return nil, errRegexNoMatch
-	}
-	return matches[0], nil
+var dbcNodesRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s *\:)(?: *)(?P<nodes>.*)`, symbols.DBCNode))
+
+var dbcMessageRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?P<id>\d+) *(?P<name>\w+) *: *(?P<length>\d+) *(?P<sender>\w+)$`, symbols.DBCMessage),
+)
+
+var dbcSignalRegex = regexp.MustCompile(
+	fmt.Sprintf(
+		`^(?:(?:\t| *)%s) *(?P<name>\w+) *(?P<mux_switch>m\d+)?(?P<mux>M)?(?: *): (?P<start_bit>\d+)\|(?P<size>\d+)@(?P<order>0|1)(?P<signed>\+|\-) *\((?P<scale>-?\d+\.?\d+|-?\d+),(?P<offset>-?\d+\.?\d+|-?\d+)\) *\[(?P<min>-?\d+\.?\d+|-?\d+)\|(?P<max>-?\d+\.?\d+|-?\d+)\] *"(?P<unit>.*)" *(?P<receivers>.*)$`,
+		symbols.DBCSignal,
+	),
+)
+
+var dbcMuxValueRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCMuxValue),
+)
+
+var dbcSignalBitmapRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<bitmap>.*);$`, symbols.DBCValue),
+)
+
+var dbcNodeCommentRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<name>\w+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCNode),
+)
+
+var dbcMessageCommentRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<id>\d+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCMessage),
+)
+
+var dbcSignalCommentRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCSignal),
+)
+
+var dbcMuxSignalRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCMuxValue),
+)
+
+type DBCReader struct {
+	currLine int
 }
 
-type DBCReader struct{}
+func NewDBCReader() *DBCReader {
+	return &DBCReader{
+		currLine: 0,
+	}
+}
 
 func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 	fileScanner := bufio.NewScanner(file)
@@ -41,7 +77,9 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 	splMuxSignals := make(map[string]*Signal)
 	extMuxSignals := make(map[string]map[string]*Signal)
 	parentMsgName := ""
-	for _, line := range lines {
+	for lineNum, line := range lines {
+		r.currLine = lineNum
+
 		if can.Version == "" {
 			version, err := r.readVersion(line)
 			if !errors.Is(err, errRegexNoMatch) {
@@ -155,6 +193,8 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 
 			if node, ok := can.Nodes[nodeComment.nodeName]; ok {
 				node.Description = nodeComment.description
+			} else {
+				return nil, r.lineErr(fmt.Sprintf("node %s doesn't exist", nodeComment.nodeName))
 			}
 
 			continue
@@ -166,11 +206,16 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 				return nil, err
 			}
 
+			found := false
 			for _, msg := range can.Messages {
 				if msg.ID == msgComment.messageID {
 					msg.Description = msgComment.description
+					found = true
 					break
 				}
+			}
+			if !found {
+				return nil, r.lineErr(fmt.Sprintf("message %d doesn't exist", msgComment.messageID))
 			}
 
 			continue
@@ -182,16 +227,24 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 				return nil, err
 			}
 
+			found := false
 			for msgName, msg := range can.Messages {
 				if msg.ID == sigComment.messageID {
 					if sig, ok := msg.Signals[sigComment.signalName]; ok {
 						sig.Description = sigComment.description
 					} else if sig, ok := extMuxSignals[msgName][sigComment.signalName]; ok {
 						sig.Description = sigComment.description
+					} else {
+						return nil, r.lineErr(fmt.Sprintf("signaal %s in message %d doesn't exist", sigComment.signalName, sigComment.messageID))
 					}
+
+					found = true
 
 					break
 				}
+			}
+			if !found {
+				return nil, r.lineErr(fmt.Sprintf("message %d doesn't exist", sigComment.messageID))
 			}
 
 			continue
@@ -204,18 +257,34 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 					return nil, err
 				}
 
+				found := false
 				for msgName, msg := range can.Messages {
 					if msg.ID == extVal.messageID {
 						if muxorSig, ok := msg.Signals[extVal.multiplexorSignalName]; ok {
-							muxorSig.MuxGroup[extVal.signalName] = extMuxSignals[msgName][extVal.signalName]
+							if muxSig, muxOk := extMuxSignals[msgName][extVal.signalName]; muxOk {
+								muxorSig.MuxGroup[extVal.signalName] = muxSig
+							} else {
+								return nil, r.lineErr(fmt.Sprintf("multiplexed signal %s in message %d doesn't exist", extVal.signalName, extVal.messageID))
+							}
+
 						} else if muxorSig, ok := extMuxSignals[msgName][extVal.multiplexorSignalName]; ok {
-							muxorSig.MuxGroup[extVal.signalName] = extMuxSignals[msgName][extVal.signalName]
+							if muxSig, muxOk := extMuxSignals[msgName][extVal.signalName]; muxOk {
+								muxorSig.MuxGroup[extVal.signalName] = muxSig
+							} else {
+								return nil, r.lineErr(fmt.Sprintf("multiplexed signal %s in message %d doesn't exist", extVal.signalName, extVal.messageID))
+							}
+
 						} else {
-							log.Print("not found")
+							return nil, r.lineErr(fmt.Sprintf("multiplexor signal %s in message %d doesn't exist", extVal.multiplexorSignalName, extVal.messageID))
 						}
+
+						found = true
 
 						break
 					}
+				}
+				if !found {
+					return nil, r.lineErr(fmt.Sprintf("message %d doesn't exist", extVal.messageID))
 				}
 
 				continue
@@ -227,7 +296,9 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 	return can, nil
 }
 
-var dbcVersionRegex = regexp.MustCompile(`^(?:VERSION) *\"(?P<version>.+)\"$`)
+func (r *DBCReader) lineErr(errStr string) error {
+	return fmt.Errorf("line %d: %s", r.currLine, errStr)
+}
 
 func (r *DBCReader) readVersion(line string) (string, error) {
 	match, err := applyRegex(dbcVersionRegex, line)
@@ -237,8 +308,6 @@ func (r *DBCReader) readVersion(line string) (string, error) {
 
 	return match[dbcVersionRegex.SubexpIndex("version")], nil
 }
-
-var dbcNodesRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s *\:)(?: *)(?P<nodes>.*)`, symbols.DBCNode))
 
 func (r *DBCReader) readNodes(line string) (map[string]*Node, error) {
 	match, err := applyRegex(dbcNodesRegex, line)
@@ -255,13 +324,6 @@ func (r *DBCReader) readNodes(line string) (map[string]*Node, error) {
 
 	return nodes, nil
 }
-
-var dbcSignalRegex = regexp.MustCompile(
-	fmt.Sprintf(
-		`^(?:(?:\t| *)%s) *(?P<name>\w+) *(?P<mux_switch>m\d+)?(?P<mux>M)?(?: *): (?P<start_bit>\d+)\|(?P<size>\d+)@(?P<order>0|1)(?P<signed>\+|\-) *\((?P<scale>-?\d+\.?\d+|-?\d+),(?P<offset>-?\d+\.?\d+|-?\d+)\) *\[(?P<min>-?\d+\.?\d+|-?\d+)\|(?P<max>-?\d+\.?\d+|-?\d+)\] *"(?P<unit>.*)" *(?P<receivers>.*)$`,
-		symbols.DBCSignal,
-	),
-)
 
 func (r *DBCReader) readSignal(line string) (*Signal, error) {
 	match, err := applyRegex(dbcSignalRegex, line)
@@ -351,10 +413,6 @@ func (r *DBCReader) readSignal(line string) (*Signal, error) {
 	}, nil
 }
 
-var dbcMessageRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?P<id>\d+) *(?P<name>\w+) *: *(?P<length>\d+) *(?P<sender>\w+)$`, symbols.DBCMessage),
-)
-
 func (r *DBCReader) readMessage(line string) (*Message, error) {
 	match, err := applyRegex(dbcMessageRegex, line)
 	if err != nil {
@@ -382,10 +440,6 @@ func (r *DBCReader) readMessage(line string) (*Message, error) {
 	}, nil
 }
 
-var dbcMuxValueRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCMuxValue),
-)
-
 type dbcExtMuxValue struct {
 	messageID             uint32
 	multiplexorSignalName string
@@ -411,10 +465,6 @@ func (r *DBCReader) readExtMuxValue(line string) (*dbcExtMuxValue, error) {
 		signalName:            sigName,
 	}, nil
 }
-
-var dbcSignalBitmapRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<bitmap>.*);$`, symbols.DBCValue),
-)
 
 type dbcBitmap struct {
 	messageID  uint32
@@ -450,10 +500,6 @@ func (r *DBCReader) readBitmap(line string) (*dbcBitmap, error) {
 	}, nil
 }
 
-var dbcNodeCommentRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<name>\w+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCNode),
-)
-
 type dbcNodeComment struct {
 	nodeName    string
 	description string
@@ -473,10 +519,6 @@ func (r *DBCReader) readNodeComment(line string) (*dbcNodeComment, error) {
 		description: desc,
 	}, nil
 }
-
-var dbcMessageCommentRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<id>\d+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCMessage),
-)
 
 type dbcMessageComment struct {
 	messageID   uint32
@@ -500,10 +542,6 @@ func (r *DBCReader) readMessageComment(line string) (*dbcMessageComment, error) 
 		description: desc,
 	}, nil
 }
-
-var dbcSignalCommentRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCSignal),
-)
 
 type dbcSignalComment struct {
 	messageID   uint32
@@ -529,23 +567,4 @@ func (r *DBCReader) readSignalComment(line string) (*dbcSignalComment, error) {
 		signalName:  sigName,
 		description: desc,
 	}, nil
-}
-
-var dbcMuxSignalRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCMuxValue),
-)
-
-func (r *DBCReader) readMuxSignal(line string) (uint32, string, string) {
-	matches := dbcMuxSignalRegex.FindAllStringSubmatch(line, -1)
-	if len(matches) == 0 {
-		return 0, "", ""
-	}
-
-	strMsgID := matches[0][dbcMuxSignalRegex.SubexpIndex("msg_id")]
-	sigName := matches[0][dbcMuxSignalRegex.SubexpIndex("sig_name")]
-	muxName := matches[0][dbcMuxSignalRegex.SubexpIndex("mux_name")]
-
-	msgID, _ := strconv.ParseUint(strMsgID, 10, 32)
-
-	return uint32(msgID), muxName, sigName
 }

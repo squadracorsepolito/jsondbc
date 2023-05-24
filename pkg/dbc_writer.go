@@ -42,33 +42,31 @@ NS_ :
 BS_ :
 `
 
-// DBCGenerator is a struct that wraps the methods to generate the DBC file.
-type DBCGenerator struct{}
+type DBCWriter struct{}
 
-// NewDBCGenerator returns a new DBCGenerator.
-func NewDBCGenerator() *DBCGenerator {
-	return &DBCGenerator{}
+func NewDBCWriter() *DBCWriter {
+	return &DBCWriter{}
 }
 
-// Generate generates the DBC file.
-func (dbc *DBCGenerator) Generate(model *CanModel, file *os.File) {
+func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	f := newFile(file)
 
-	f.print("VERSION", formatString(model.Version))
+	f.print("VERSION", formatString(canModel.Version))
 	f.print(dbcHeaders)
-	dbc.genNodes(f, model.Nodes)
+	w.writeNodes(f, canModel.Nodes)
 
-	for msgName, msg := range model.Messages {
-		dbc.genMessage(f, msgName, msg)
+	for msgName, msg := range canModel.Messages {
+		w.writeMessage(f, msgName, msg)
 	}
 
-	dbc.genMuxGroup(f, model.Messages)
-	dbc.genBitmaps(f, model)
-	dbc.genComments(f, model)
+	w.writeMuxGroup(f, canModel.Messages)
+	w.writeBitmaps(f, canModel)
+	w.writeComments(f, canModel)
+
+	return nil
 }
 
-// genNodes generates the node definitions of the DBC file.
-func (dbc *DBCGenerator) genNodes(f *file, nodes map[string]*Node) {
+func (w *DBCWriter) writeNodes(f *file, nodes map[string]*Node) {
 	nodeNames := []string{}
 	for nodeName := range nodes {
 		nodeNames = append(nodeNames, nodeName)
@@ -80,8 +78,7 @@ func (dbc *DBCGenerator) genNodes(f *file, nodes map[string]*Node) {
 	f.print()
 }
 
-// genMessage generates the message definitions of the DBC file.
-func (dbc *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
+func (w *DBCWriter) writeMessage(f *file, msgName string, msg *Message) {
 	id := fmt.Sprintf("%d", msg.ID)
 	length := fmt.Sprintf("%d", msg.Length)
 	sender := msg.Sender
@@ -91,14 +88,13 @@ func (dbc *DBCGenerator) genMessage(f *file, msgName string, msg *Message) {
 	f.print(symbols.DBCMessage, id, msgName+":", length, sender)
 
 	for sigName, sig := range msg.Signals {
-		dbc.genSignal(f, sigName, sig, false)
+		w.writeSignal(f, sigName, sig, false)
 	}
 
 	f.print()
 }
 
-// genSignal generates the signal definitions of the DBC file.
-func (dbc *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
+func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
 	byteOrder := 0
 	if sig.BigEndian {
 		byteOrder = 1
@@ -133,39 +129,36 @@ func (dbc *DBCGenerator) genSignal(f *file, sigName string, sig *Signal, multipl
 		muxStr += "M"
 
 		for muxSigName, muxSig := range sig.MuxGroup {
-			dbc.genSignal(f, muxSigName, muxSig, true)
+			w.writeSignal(f, muxSigName, muxSig, true)
 		}
 	}
 
 	f.print("\t", symbols.DBCSignal, sigName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
-// genMuxGroup generates the multiplexed signals of the DBC file.
-func (dbc *DBCGenerator) genMuxGroup(f *file, messages map[string]*Message) {
+func (w *DBCWriter) writeMuxGroup(f *file, messages map[string]*Message) {
 	for _, msg := range messages {
 		for sigName, sig := range msg.Signals {
 			if sig.IsMultiplexor() {
 				for muxSigName, muxSig := range sig.MuxGroup {
-					dbc.genMuxSignal(f, msg.FormatID(), sigName, muxSigName, muxSig)
+					w.writeMuxSignal(f, msg.FormatID(), sigName, muxSigName, muxSig)
 				}
 			}
 		}
 	}
 }
 
-// genMuxSignal generates a multiplexed signal value.
-func (dbc *DBCGenerator) genMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
+func (w *DBCWriter) writeMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
 	if sig.IsMultiplexor() {
 		for innSigName, innSig := range sig.MuxGroup {
-			dbc.genMuxSignal(f, msgID, sigName, innSigName, innSig)
+			w.writeMuxSignal(f, msgID, sigName, innSigName, innSig)
 		}
 	}
 
 	f.print(symbols.DBCMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
 }
 
-// genBitmaps generates the bitmats of the DBC file.
-func (dbc *DBCGenerator) genBitmaps(f *file, m *CanModel) {
+func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
 	for _, msg := range m.Messages {
 		for sigName, sig := range msg.Signals {
 			if sig.IsBitmap() {
@@ -185,45 +178,41 @@ func (dbc *DBCGenerator) genBitmaps(f *file, m *CanModel) {
 	}
 }
 
-// genComments generates the comments of the DBC file.
-func (dbc *DBCGenerator) genComments(f *file, m *CanModel) {
+func (w *DBCWriter) writeComments(f *file, m *CanModel) {
 	for nodeName, node := range m.Nodes {
-		dbc.genNodeComment(f, nodeName, node)
+		w.writeNodeComment(f, nodeName, node)
 	}
 
 	for _, msg := range m.Messages {
-		dbc.genMessageComment(f, msg)
+		w.writeMessageComment(f, msg)
 	}
 }
 
-// genNodeComment generates the comment of a node.
-func (dbc *DBCGenerator) genNodeComment(f *file, nodeName string, node *Node) {
+func (w *DBCWriter) writeNodeComment(f *file, nodeName string, node *Node) {
 	if node.HasDescription() {
 		f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
 	}
 }
 
-// genMessageComment generates the comment of a message.
-func (dbc *DBCGenerator) genMessageComment(f *file, msg *Message) {
+func (w *DBCWriter) writeMessageComment(f *file, msg *Message) {
 	msgID := msg.FormatID()
 	if msg.HasDescription() {
 		f.print(symbols.DBCComment, symbols.DBCMessage, msgID, formatString(msg.Description), ";")
 	}
 
 	for sigName, sig := range msg.Signals {
-		dbc.genSignalComment(f, msgID, sigName, sig)
+		w.writeSignalComment(f, msgID, sigName, sig)
 	}
 }
 
-// genSignalComment generates the comment of a signal.
-func (dbc *DBCGenerator) genSignalComment(f *file, msgID, sigName string, sig *Signal) {
+func (w *DBCWriter) writeSignalComment(f *file, msgID, sigName string, sig *Signal) {
 	if sig.HasDescription() {
 		f.print(symbols.DBCComment, symbols.DBCSignal, msgID, sigName, formatString(sig.Description), ";")
 	}
 
 	if sig.IsMultiplexor() {
 		for muxSigName, muxSig := range sig.MuxGroup {
-			dbc.genSignalComment(f, msgID, muxSigName, muxSig)
+			w.writeSignalComment(f, msgID, muxSigName, muxSig)
 		}
 	}
 }

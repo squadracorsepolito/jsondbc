@@ -2,7 +2,9 @@
 package pkg
 
 import (
+	"errors"
 	"os"
+	"regexp"
 	"strconv"
 )
 
@@ -58,4 +60,14 @@ func (f *file) print(str ...string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+var errRegexNoMatch = errors.New("no match")
+
+func applyRegex(r *regexp.Regexp, str string) ([]string, error) {
+	matches := r.FindAllStringSubmatch(str, -1)
+	if len(matches) == 0 {
+		return nil, errRegexNoMatch
+	}
+	return matches[0], nil
 }

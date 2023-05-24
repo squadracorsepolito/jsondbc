@@ -1,6 +1,17 @@
 package pkg
 
-import "strconv"
+import (
+	"os"
+	"strconv"
+)
+
+type Reader interface {
+	Read(file *os.File) (*CanModel, error)
+}
+
+type Writer interface {
+	Write(file *os.File, canModel *CanModel) error
+}
 
 // CanModel represents the CAN model.
 type CanModel struct {

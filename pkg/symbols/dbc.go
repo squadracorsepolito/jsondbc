@@ -3,6 +3,7 @@ package symbols
 
 // DBC symbols
 const (
+	DBCVersion  = "VERSION"
 	DBCNode     = "BU_"
 	DBCMessage  = "BO_"
 	DBCSignal   = "SG_"
