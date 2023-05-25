@@ -16,6 +16,7 @@ type Writer interface {
 // CanModel represents the CAN model.
 type CanModel struct {
 	Version  string              `json:"version"`
+	BusSpeed uint32              `json:"bus_speed"`
 	Nodes    map[string]*Node    `json:"nodes"`
 	Messages map[string]*Message `json:"messages"`
 }

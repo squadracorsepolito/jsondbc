@@ -14,6 +14,8 @@ import (
 
 var dbcVersionRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s) *\"(?P<version>.+)\"$`, symbols.DBCVersion))
 
+var dbcBusSpeedRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s *\:) *(?P<speed>\d+)$`, symbols.DBCBusSpeed))
+
 var dbcNodesRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s *\:)(?: *)(?P<nodes>.*)`, symbols.DBCNode))
 
 var dbcMessageRegex = regexp.MustCompile(
@@ -90,6 +92,16 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 				can.Version = version
 				continue
 			}
+		}
+
+		busSpeed, err := r.readBusSpeed(line)
+		if !errors.Is(err, errRegexNoMatch) {
+			if err != nil {
+				return nil, err
+			}
+
+			can.BusSpeed = busSpeed
+			continue
 		}
 
 		if len(can.Nodes) == 0 {
@@ -307,6 +319,20 @@ func (r *DBCReader) readVersion(line string) (string, error) {
 	}
 
 	return match[dbcVersionRegex.SubexpIndex("version")], nil
+}
+
+func (r *DBCReader) readBusSpeed(line string) (uint32, error) {
+	match, err := applyRegex(dbcBusSpeedRegex, line)
+	if err != nil {
+		return 0, err
+	}
+
+	speed, err := parseUint(match[dbcBusSpeedRegex.SubexpIndex("speed")])
+	if err != nil {
+		return 0, err
+	}
+
+	return speed, nil
 }
 
 func (r *DBCReader) readNodes(line string) (map[string]*Node, error) {

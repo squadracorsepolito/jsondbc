@@ -38,8 +38,6 @@ NS_ :
 	BU_SG_REL_
 	BU_EV_REL_
 	BU_BO_REL_
-
-BS_ :
 `
 
 type DBCWriter struct{}
@@ -51,8 +49,10 @@ func NewDBCWriter() *DBCWriter {
 func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	f := newFile(file)
 
-	f.print("VERSION", formatString(canModel.Version))
+	f.print(symbols.DBCVersion, formatString(canModel.Version))
 	f.print(dbcHeaders)
+
+	w.writeBusSpeed(f, canModel.BusSpeed)
 	w.writeNodes(f, canModel.Nodes)
 
 	for msgName, msg := range canModel.Messages {
@@ -64,6 +64,15 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	w.writeComments(f, canModel)
 
 	return nil
+}
+
+func (w *DBCWriter) writeBusSpeed(f *file, speed uint32) {
+	strSpeed := ""
+	if speed > 0 {
+		strSpeed = formatUint(speed)
+	}
+	f.print(symbols.DBCBusSpeed, ":", strSpeed)
+	f.print()
 }
 
 func (w *DBCWriter) writeNodes(f *file, nodes map[string]*Node) {

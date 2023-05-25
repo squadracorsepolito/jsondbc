@@ -1,5 +1,6 @@
 {
     "version": "1.0",
+    "bus_speed": 9600,
     "nodes": {
         "Node1": {
             "description": "Node1 desc"
