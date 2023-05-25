@@ -60,8 +60,21 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	}
 
 	w.writeBitmaps(f, canModel)
+	f.newLine()
+
 	w.writeMuxGroup(f, canModel.Messages)
+	f.newLine()
+
 	w.writeComments(f, canModel)
+	f.newLine()
+
+	for _, att := range canModel.getAttributes() {
+		w.writeAttributeDefinition(f, att)
+	}
+	for _, att := range canModel.getAttributes() {
+		w.writeAttributeDefaultValue(f, att)
+	}
+	w.writeAttributeAssignments(f, canModel)
 
 	return nil
 }
@@ -237,5 +250,80 @@ func (w *DBCWriter) writeSignalComment(f *file, msgID, sigName string, sig *Sign
 		for muxSigName, muxSig := range sig.MuxGroup {
 			w.writeSignalComment(f, msgID, muxSigName, muxSig)
 		}
+	}
+}
+
+func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
+	attKindStr := ""
+	switch att.attributeKind {
+	case attributeKindNode:
+		attKindStr = symbols.DBCNode
+	case attributeKindMessage:
+		attKindStr = symbols.DBCMessage
+	case attributeKindSignal:
+		attKindStr = symbols.DBCSignal
+	}
+
+	strValues := ""
+	switch att.attributeType {
+	case attributeTypeInt:
+		strValues = fmt.Sprintf("INT %d %d", att.Int.From, att.Int.To)
+	case attributeTypeString:
+		strValues = `STRING ""`
+	case attributeTypeEnum:
+		strValues = "ENUM "
+		for i, val := range att.Enum.Values {
+			strValues += formatString(val)
+			if i == len(att.Enum.Values)-1 {
+				continue
+			}
+			strValues += ","
+		}
+	}
+
+	f.print(symbols.DBCAttributeDefinition, attKindStr, formatString(att.name), strValues, ";")
+}
+
+func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
+	defValue := ""
+	switch att.attributeType {
+	case attributeTypeInt:
+		defValue = formatInt(att.Int.Default)
+	case attributeTypeString:
+		defValue = formatString(att.String.Default)
+	case attributeTypeEnum:
+		defValue = formatInt(att.Enum.defaultIdx)
+	}
+
+	f.print(symbols.DBCAttributeDefaultValue, formatString(att.name), defValue, ";")
+}
+
+func (w *DBCWriter) getAttributeAssignmentValue(ass attributeAssignmentValue) string {
+	strVal := ""
+	switch ass.attType {
+	case attributeTypeInt:
+		strVal = formatInt(ass.intAttValue)
+	case attributeTypeString:
+		strVal = formatString(ass.stringAttValue)
+	case attributeTypeEnum:
+		strVal = formatInt(ass.enumAttValue)
+	}
+	return strVal
+}
+
+func (w *DBCWriter) writeAttributeAssignments(f *file, canModel *CanModel) {
+	for _, nodeAss := range canModel.getNodeAttributeAssignments() {
+		srtValue := w.getAttributeAssignmentValue(nodeAss.attributeAssignmentValue)
+		f.print(symbols.DBCAttributeAssignment, formatString(nodeAss.attName), symbols.DBCNode, nodeAss.nodeName, srtValue, ";")
+	}
+
+	for _, msgAss := range canModel.getMessageAttributeAssignments() {
+		srtValue := w.getAttributeAssignmentValue(msgAss.attributeAssignmentValue)
+		f.print(symbols.DBCAttributeAssignment, formatString(msgAss.attName), symbols.DBCMessage, formatUint(msgAss.messageID), srtValue, ";")
+	}
+
+	for _, sigAss := range canModel.getSignalAttributeAssignments() {
+		srtValue := w.getAttributeAssignmentValue(sigAss.attributeAssignmentValue)
+		f.print(symbols.DBCAttributeAssignment, formatString(sigAss.attName), symbols.DBCSignal, formatUint(sigAss.messageID), sigAss.signalName, srtValue, ";")
 	}
 }

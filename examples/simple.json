@@ -1,6 +1,27 @@
 {
     "version": "1.0",
     "bus_speed": 9600,
+    "message_attributes": {
+        "VFrameFormat": {
+            "enum": {
+                "values": [
+                    "StandardCAN",
+                    "ExtendedCAN",
+                    "reserved",
+                    "J1939PG"
+                ],
+                "default": "J1939PG"
+            }
+        }
+    },
+    "signal_attributes": {
+        "SPN": {
+            "int": {
+                "from": 0,
+                "to": 524287
+            }
+        }
+    },
     "nodes": {
         "Node1": {
             "description": "Node1 desc"
@@ -13,11 +34,17 @@
         "EEC1": {
             "id": 2364540158,
             "description": "desc 0",
+            "enum_attributes": {
+                "VFrameFormat": "StandardCAN"
+            },
             "length": 8,
             "sender": "",
             "signals": {
                 "Engine_Speed": {
                     "description": "desc 1",
+                    "int_attributes": {
+                        "SPN": 190
+                    },
                     "start_bit": 24,
                     "size": 16,
                     "big_endian": false,
