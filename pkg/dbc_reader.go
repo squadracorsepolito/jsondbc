@@ -28,7 +28,7 @@ var dbcSignalRegex = regexp.MustCompile(
 )
 
 var dbcMuxValueRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCMuxValue),
+	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCExtMuxValue),
 )
 
 var dbcSignalBitmapRegex = regexp.MustCompile(
@@ -47,8 +47,8 @@ var dbcSignalCommentRegex = regexp.MustCompile(
 	fmt.Sprintf(`^(?:%s) *(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *"(?P<desc>.*)" *;$`, symbols.DBCComment, symbols.DBCSignal),
 )
 
-var dbcMuxSignalRegex = regexp.MustCompile(
-	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCMuxValue),
+var dbcExtMuxValueRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *(?P<mux_name>\w+) *(?:\d+\-?){2} *;$`, symbols.DBCExtMuxValue),
 )
 
 type DBCReader struct {
@@ -452,12 +452,12 @@ func (r *DBCReader) readExtMuxValue(line string) (*dbcExtMuxValue, error) {
 		return nil, err
 	}
 
-	msgID, err := parseUint(match[dbcMuxSignalRegex.SubexpIndex("msg_id")])
+	msgID, err := parseUint(match[dbcExtMuxValueRegex.SubexpIndex("msg_id")])
 	if err != nil {
 		return nil, err
 	}
-	sigName := match[dbcMuxSignalRegex.SubexpIndex("sig_name")]
-	muxName := match[dbcMuxSignalRegex.SubexpIndex("mux_name")]
+	sigName := match[dbcExtMuxValueRegex.SubexpIndex("sig_name")]
+	muxName := match[dbcExtMuxValueRegex.SubexpIndex("mux_name")]
 
 	return &dbcExtMuxValue{
 		messageID:             msgID,

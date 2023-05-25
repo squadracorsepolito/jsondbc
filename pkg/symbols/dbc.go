@@ -3,11 +3,11 @@ package symbols
 
 // DBC symbols
 const (
-	DBCVersion  = "VERSION"
-	DBCNode     = "BU_"
-	DBCMessage  = "BO_"
-	DBCSignal   = "SG_"
-	DBCComment  = "CM_"
-	DBCValue    = "VAL_"
-	DBCMuxValue = "SG_MUL_VAL_"
+	DBCVersion     = "VERSION"
+	DBCNode        = "BU_"
+	DBCMessage     = "BO_"
+	DBCSignal      = "SG_"
+	DBCComment     = "CM_"
+	DBCValue       = "VAL_"
+	DBCExtMuxValue = "SG_MUL_VAL_"
 )

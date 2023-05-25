@@ -59,8 +59,8 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 		w.writeMessage(f, msgName, msg)
 	}
 
-	w.writeMuxGroup(f, canModel.Messages)
 	w.writeBitmaps(f, canModel)
+	w.writeMuxGroup(f, canModel.Messages)
 	w.writeComments(f, canModel)
 
 	return nil
@@ -138,24 +138,38 @@ func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexe
 
 func (w *DBCWriter) writeMuxGroup(f *file, messages map[string]*Message) {
 	for _, msg := range messages {
-		for sigName, sig := range msg.Signals {
+		isExtMux := false
+		for _, sig := range msg.Signals {
 			if sig.IsMultiplexor() {
-				for muxSigName, muxSig := range sig.MuxGroup {
-					w.writeMuxSignal(f, msg.FormatID(), sigName, muxSigName, muxSig)
+				for _, muxSig := range sig.MuxGroup {
+					if muxSig.IsMultiplexor() {
+						isExtMux = true
+						break
+					}
+				}
+			}
+		}
+
+		if isExtMux {
+			for sigName, sig := range msg.Signals {
+				if sig.IsMultiplexor() {
+					for muxSigName, muxSig := range sig.MuxGroup {
+						w.writeExtMuxValue(f, msg.FormatID(), sigName, muxSigName, muxSig)
+					}
 				}
 			}
 		}
 	}
 }
 
-func (w *DBCWriter) writeMuxSignal(f *file, msgID, muxSigName, sigName string, sig *Signal) {
+func (w *DBCWriter) writeExtMuxValue(f *file, msgID, muxSigName, sigName string, sig *Signal) {
 	if sig.IsMultiplexor() {
 		for innSigName, innSig := range sig.MuxGroup {
-			w.writeMuxSignal(f, msgID, sigName, innSigName, innSig)
+			w.writeExtMuxValue(f, msgID, sigName, innSigName, innSig)
 		}
 	}
 
-	f.print(symbols.DBCMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
+	f.print(symbols.DBCExtMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
 }
 
 func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {

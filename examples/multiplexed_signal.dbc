@@ -47,7 +47,7 @@ SG_MUL_VAL_ 2024 S2 Service 2-2 ;
 CM_ BU_ Node1 "Node1 desc" ;
 CM_ BO_ 2024 "desc OBD2" ;
 CM_ SG_ 2024 Service "desc Service" ;
-CM_ SG_ 2024 S1 "desc S2" ;
+CM_ SG_ 2024 S2 "desc S2" ;
 CM_ SG_ 2024 S1 "desc S1" ;
 CM_ SG_ 2024 VehicleSpeed "desc VehicleSpeed" ;
 CM_ SG_ 2024 ThrottlePosition "desc ThrottlePosition" ;
