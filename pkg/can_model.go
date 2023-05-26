@@ -73,47 +73,63 @@ func (c *CanModel) getAttributes() []*Attribute {
 	return attributes
 }
 
-type nodeAttributeAssignment struct {
-	attributeAssignmentValue
+type nodeAttAssignment struct {
+	attAssignmentVal
 	nodeName string
 }
 
-func (c *CanModel) getNodeAttributeAssignments() []*nodeAttributeAssignment {
-	assignments := []*nodeAttributeAssignment{}
+func (c *CanModel) getNodeAttAssignments() []*nodeAttAssignment {
+	assignments := []*nodeAttAssignment{}
 
-	return assignments
-}
-
-type messageAttributeAssignment struct {
-	attributeAssignmentValue
-	messageID uint32
-}
-
-func (c *CanModel) getMessageAttributeAssignments() []*messageAttributeAssignment {
-	assignments := []*messageAttributeAssignment{}
-
-	for _, msg := range c.Messages {
-		for _, ass := range msg.getAttributeAssignmentValues() {
-			assignments = append(assignments, &messageAttributeAssignment{attributeAssignmentValue: *ass, messageID: msg.ID})
+	for _, node := range c.Nodes {
+		for _, ass := range node.getAttAssignmentValues() {
+			assignments = append(assignments, &nodeAttAssignment{
+				attAssignmentVal: *ass,
+				nodeName:         node.name,
+			})
 		}
 	}
 
 	return assignments
 }
 
-type signalAttributeAssignment struct {
-	attributeAssignmentValue
+type messageAttAssignment struct {
+	attAssignmentVal
+	messageID uint32
+}
+
+func (c *CanModel) getMessageAttAssignments() []*messageAttAssignment {
+	assignments := []*messageAttAssignment{}
+
+	for _, msg := range c.Messages {
+		for _, ass := range msg.getAttAssignmentValues() {
+			assignments = append(assignments, &messageAttAssignment{
+				attAssignmentVal: *ass,
+				messageID:        msg.ID,
+			})
+		}
+	}
+
+	return assignments
+}
+
+type signalAttAssignment struct {
+	attAssignmentVal
 	messageID  uint32
 	signalName string
 }
 
-func (c *CanModel) getSignalAttributeAssignments() []*signalAttributeAssignment {
-	assignments := []*signalAttributeAssignment{}
+func (c *CanModel) getSignalAttAssignments() []*signalAttAssignment {
+	assignments := []*signalAttAssignment{}
 
 	for _, msg := range c.Messages {
 		for sigName, sig := range msg.Signals {
-			for _, ass := range sig.getAttributeAssignmentValues() {
-				assignments = append(assignments, &signalAttributeAssignment{attributeAssignmentValue: *ass, messageID: msg.ID, signalName: sigName})
+			for _, ass := range sig.getAttAssignmentValues() {
+				assignments = append(assignments, &signalAttAssignment{
+					attAssignmentVal: *ass,
+					messageID:        msg.ID,
+					signalName:       sigName,
+				})
 			}
 		}
 	}

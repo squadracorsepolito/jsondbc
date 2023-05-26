@@ -22,9 +22,9 @@ const (
 )
 
 type Attribute struct {
-	Int    *AttributeInt    `json:"int"`
-	String *AttributeString `json:"string"`
-	Enum   *AttributeEnum   `json:"enum"`
+	Int    *AttributeInt    `json:"int,omitempty"`
+	String *AttributeString `json:"string,omitempty"`
+	Enum   *AttributeEnum   `json:"enum,omitempty"`
 
 	name          string
 	attributeKind attributeKind
@@ -152,7 +152,7 @@ func (aa *attributeAssignment) validate(attributes map[string]*Attribute) error 
 	return nil
 }
 
-type attributeAssignmentValue struct {
+type attAssignmentVal struct {
 	attType        attributeType
 	attName        string
 	intAttValue    int
@@ -160,11 +160,11 @@ type attributeAssignmentValue struct {
 	enumAttValue   int
 }
 
-func (aa *attributeAssignment) getAttributeAssignmentValues() []*attributeAssignmentValue {
-	values := []*attributeAssignmentValue{}
+func (aa *attributeAssignment) getAttAssignmentValues() []*attAssignmentVal {
+	values := []*attAssignmentVal{}
 
 	for attName, intAttValue := range aa.IntAttributes {
-		values = append(values, &attributeAssignmentValue{
+		values = append(values, &attAssignmentVal{
 			attName:     attName,
 			attType:     attributeTypeInt,
 			intAttValue: intAttValue,
@@ -172,7 +172,7 @@ func (aa *attributeAssignment) getAttributeAssignmentValues() []*attributeAssign
 	}
 
 	for attName, stringAttValue := range aa.StringAttributes {
-		values = append(values, &attributeAssignmentValue{
+		values = append(values, &attAssignmentVal{
 			attName:        attName,
 			attType:        attributeTypeString,
 			stringAttValue: stringAttValue,
@@ -180,7 +180,7 @@ func (aa *attributeAssignment) getAttributeAssignmentValues() []*attributeAssign
 	}
 
 	for attName, enumIdx := range aa.enumAttributeIdxs {
-		values = append(values, &attributeAssignmentValue{
+		values = append(values, &attAssignmentVal{
 			attName:      attName,
 			attType:      attributeTypeEnum,
 			enumAttValue: enumIdx,

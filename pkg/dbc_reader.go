@@ -2,14 +2,17 @@ package pkg
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/FerroO2000/canconv/pkg/symbols"
+	"golang.org/x/sync/errgroup"
 )
 
 var dbcVersionRegex = regexp.MustCompile(fmt.Sprintf(`^(?:%s) *\"(?P<version>.+)\"$`, symbols.DBCVersion))
@@ -54,12 +57,14 @@ var dbcExtMuxValueRegex = regexp.MustCompile(
 )
 
 type DBCReader struct {
-	currLine int
+	currLine  int
+	fileLines []string
 }
 
 func NewDBCReader() *DBCReader {
 	return &DBCReader{
-		currLine: 0,
+		currLine:  0,
+		fileLines: []string{},
 	}
 }
 
@@ -73,7 +78,11 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 	}
 
 	can := &CanModel{
-		Messages: make(map[string]*Message),
+		Nodes:             make(map[string]*Node),
+		Messages:          make(map[string]*Message),
+		NodeAttributes:    make(map[string]*Attribute),
+		MessageAttributes: make(map[string]*Attribute),
+		SignalAttributes:  make(map[string]*Attribute),
 	}
 
 	splMuxSignals := make(map[string]*Signal)
@@ -305,7 +314,294 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 
 	}
 
+	r.fileLines = lines
+
+	attLineNumbers := []int{}
+	attDefValLineNumbers := []int{}
+	for lineNum, line := range lines {
+		if strings.HasPrefix(line, symbols.DBCAttDef+" ") {
+			attLineNumbers = append(attLineNumbers, lineNum)
+		} else if strings.HasPrefix(line, symbols.DBCAttDefaultVal+" ") {
+			attDefValLineNumbers = append(attDefValLineNumbers, lineNum)
+		}
+	}
+
+	g, _ := errgroup.WithContext(context.Background())
+
+	g.Go(func() error {
+		attributes, err := r.handleAttributes(attLineNumbers)
+		if err != nil {
+			return err
+		}
+
+		for _, att := range attributes {
+			switch att.attributeKind {
+			case attributeKindNode:
+				can.NodeAttributes[att.name] = att
+			case attributeKindMessage:
+				can.MessageAttributes[att.name] = att
+			case attributeKindSignal:
+				can.SignalAttributes[att.name] = att
+			}
+		}
+
+		return nil
+	})
+
+	defAttValues := []*dbcDefAttVal{}
+	g.Go(func() error {
+		tmpDefAttValues, err := r.handleDefaultAttributeValues(attDefValLineNumbers)
+		if err != nil {
+			return err
+		}
+		defAttValues = tmpDefAttValues
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	for _, defAttVal := range defAttValues {
+		if att, ok := can.NodeAttributes[defAttVal.attName]; ok {
+			switch att.attributeType {
+			case attributeTypeInt:
+				att.Int.Default = defAttVal.intVal
+			case attributeTypeString:
+				att.String.Default = defAttVal.stringVal
+			case attributeTypeEnum:
+				enumIdx := defAttVal.intVal
+				log.Print(att)
+				if enumIdx >= 0 && enumIdx < len(att.Enum.Values) {
+					att.Enum.Default = att.Enum.Values[enumIdx]
+					att.Enum.defaultIdx = enumIdx
+				}
+			}
+		}
+
+		if att, ok := can.MessageAttributes[defAttVal.attName]; ok {
+			switch att.attributeType {
+			case attributeTypeInt:
+				att.Int.Default = defAttVal.intVal
+			case attributeTypeString:
+				att.String.Default = defAttVal.stringVal
+			case attributeTypeEnum:
+				enumIdx := defAttVal.intVal
+				if enumIdx >= 0 && enumIdx < len(att.Enum.Values) {
+					att.Enum.Default = att.Enum.Values[enumIdx]
+					att.Enum.defaultIdx = enumIdx
+				}
+			}
+		}
+
+		if att, ok := can.SignalAttributes[defAttVal.attName]; ok {
+			switch att.attributeType {
+			case attributeTypeInt:
+				att.Int.Default = defAttVal.intVal
+			case attributeTypeString:
+				att.String.Default = defAttVal.stringVal
+			case attributeTypeEnum:
+				enumIdx := defAttVal.intVal
+				if enumIdx >= 0 && enumIdx < len(att.Enum.Values) {
+					att.Enum.Default = att.Enum.Values[enumIdx]
+					att.Enum.defaultIdx = enumIdx
+				}
+			}
+		}
+	}
+
 	return can, nil
+}
+
+func (r *DBCReader) handleAttributes(lineNumbers []int) ([]*Attribute, error) {
+	attributes := []*Attribute{}
+
+	for _, idx := range lineNumbers {
+		line := r.fileLines[idx]
+		att, err := r.readAttribute(line)
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %w", idx, err)
+		}
+		attributes = append(attributes, att)
+	}
+
+	return attributes, nil
+}
+
+var dbcAttRegex = regexp.MustCompile(
+	fmt.Sprintf(
+		`^(?:%s) *(?P<att_kind>%s|%s|%s) *"(?P<att_name>\w+)" *(?P<att_type>%s|%s|%s) *`,
+		symbols.DBCAttDef,
+		symbols.DBCNode,
+		symbols.DBCMessage,
+		symbols.DBCSignal,
+		symbols.DBCAttIntType,
+		symbols.DBCAttStringType,
+		symbols.DBCAttEnumType,
+	),
+)
+
+func (r *DBCReader) readAttribute(line string) (*Attribute, error) {
+	match, err := applyRegex(dbcAttRegex, line)
+	if err != nil {
+		return nil, err
+	}
+
+	att := &Attribute{
+		name: match[dbcAttRegex.SubexpIndex("att_name")],
+	}
+
+	switch match[dbcAttRegex.SubexpIndex("att_kind")] {
+	case symbols.DBCNode:
+		att.attributeKind = attributeKindNode
+	case symbols.DBCMessage:
+		att.attributeKind = attributeKindMessage
+	case symbols.DBCSignal:
+		att.attributeKind = attributeKindSignal
+	}
+
+	switch match[dbcAttRegex.SubexpIndex("att_type")] {
+	case symbols.DBCAttIntType:
+		att.attributeType = attributeTypeInt
+		intAtt, err := r.readIntAttribute(line)
+		if err != nil {
+			return nil, err
+		}
+		att.Int = intAtt
+
+	case symbols.DBCAttStringType:
+		att.attributeType = attributeTypeString
+		att.String = &AttributeString{}
+
+	case symbols.DBCAttEnumType:
+		att.attributeType = attributeTypeEnum
+		enumAtt, err := r.readEnumAttribute(line)
+		if err != nil {
+			return nil, err
+		}
+		att.Enum = enumAtt
+	}
+
+	return att, nil
+}
+
+var dbcIntAttRegex = regexp.MustCompile(
+	fmt.Sprintf(
+		`^(?:%s) *(?:%s|%s|%s) *"(?:\w+)" *(?:%s) *(?P<from>-?\d+) *(?P<to>-?\d+) *;$`,
+		symbols.DBCAttDef,
+		symbols.DBCNode,
+		symbols.DBCMessage,
+		symbols.DBCSignal,
+		symbols.DBCAttIntType,
+	),
+)
+
+func (r *DBCReader) readIntAttribute(line string) (*AttributeInt, error) {
+	match, err := applyRegex(dbcIntAttRegex, line)
+	if err != nil {
+		return nil, err
+	}
+
+	from, err := parseInt(match[dbcIntAttRegex.SubexpIndex("from")])
+	if err != nil {
+		return nil, err
+	}
+	to, err := parseInt(match[dbcIntAttRegex.SubexpIndex("to")])
+	if err != nil {
+		return nil, err
+	}
+
+	return &AttributeInt{
+		From: from,
+		To:   to,
+	}, nil
+}
+
+var dbcEnumAttRegex = regexp.MustCompile(
+	fmt.Sprintf(
+		`^(?:%s) *(?:%s|%s|%s) *"(?:\w+)" *(?:%s) *(?P<enum>.*);$`,
+		symbols.DBCAttDef,
+		symbols.DBCNode,
+		symbols.DBCMessage,
+		symbols.DBCSignal,
+		symbols.DBCAttEnumType,
+	),
+)
+
+func (r *DBCReader) readEnumAttribute(line string) (*AttributeEnum, error) {
+	match, err := applyRegex(dbcEnumAttRegex, line)
+	if err != nil {
+		return nil, err
+	}
+
+	enums := strings.Split(strings.TrimSpace(match[dbcEnumAttRegex.SubexpIndex("enum")]), ",")
+	values := []string{}
+	for _, e := range enums {
+		values = append(values, strings.Replace(e, "\"", "", -1))
+	}
+
+	return &AttributeEnum{
+		Values: values,
+	}, nil
+}
+
+var dbcDefAttValRegex = regexp.MustCompile(
+	fmt.Sprintf(`^(?:%s) *"(?P<att_name>\w+)" *(?P<def_val>""|"\w+"|-?\d+) *;$`, symbols.DBCAttDefaultVal),
+)
+
+type dbcDefAttVal struct {
+	attName   string
+	intVal    int
+	stringVal string
+}
+
+func (r *DBCReader) handleDefaultAttributeValues(lineNumbers []int) ([]*dbcDefAttVal, error) {
+	attValues := []*dbcDefAttVal{}
+
+	for _, idx := range lineNumbers {
+		line := r.fileLines[idx]
+		attVal, err := r.readDefaultAttributeValue(line)
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %w", idx, err)
+		}
+		attValues = append(attValues, attVal)
+	}
+
+	return attValues, nil
+}
+
+func (r *DBCReader) readDefaultAttributeValue(line string) (*dbcDefAttVal, error) {
+	match, err := applyRegex(dbcDefAttValRegex, line)
+	if err != nil {
+		return nil, err
+	}
+
+	attVal := &dbcDefAttVal{
+		attName: match[dbcDefAttValRegex.SubexpIndex("att_name")],
+	}
+
+	strVal := strings.TrimSpace(match[dbcDefAttValRegex.SubexpIndex("def_val")])
+	if len(strVal) == 2 {
+		return attVal, nil
+	}
+
+	log.Print(strVal)
+
+	re := regexp.MustCompile(`^"(?P<val>\w+)"$`)
+	submatch, err := applyRegex(re, strVal)
+	if err != nil {
+		intVal, err := parseInt(strVal)
+		if err != nil {
+			return nil, err
+		}
+		attVal.intVal = intVal
+		return attVal, nil
+	}
+
+	attVal.stringVal = submatch[re.SubexpIndex("val")]
+
+	return attVal, nil
 }
 
 func (r *DBCReader) lineErr(errStr string) error {

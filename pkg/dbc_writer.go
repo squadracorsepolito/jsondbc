@@ -74,7 +74,7 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	for _, att := range canModel.getAttributes() {
 		w.writeAttributeDefaultValue(f, att)
 	}
-	w.writeAttributeAssignments(f, canModel)
+	w.writeAttAssignments(f, canModel)
 
 	return nil
 }
@@ -281,7 +281,7 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 		}
 	}
 
-	f.print(symbols.DBCAttributeDefinition, attKindStr, formatString(att.name), strValues, ";")
+	f.print(symbols.DBCAttDef, attKindStr, formatString(att.name), strValues, ";")
 }
 
 func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
@@ -295,10 +295,10 @@ func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
 		defValue = formatInt(att.Enum.defaultIdx)
 	}
 
-	f.print(symbols.DBCAttributeDefaultValue, formatString(att.name), defValue, ";")
+	f.print(symbols.DBCAttDefaultVal, formatString(att.name), defValue, ";")
 }
 
-func (w *DBCWriter) getAttributeAssignmentValue(ass attributeAssignmentValue) string {
+func (w *DBCWriter) getAttAssignmentValue(ass attAssignmentVal) string {
 	strVal := ""
 	switch ass.attType {
 	case attributeTypeInt:
@@ -311,19 +311,19 @@ func (w *DBCWriter) getAttributeAssignmentValue(ass attributeAssignmentValue) st
 	return strVal
 }
 
-func (w *DBCWriter) writeAttributeAssignments(f *file, canModel *CanModel) {
-	for _, nodeAss := range canModel.getNodeAttributeAssignments() {
-		srtValue := w.getAttributeAssignmentValue(nodeAss.attributeAssignmentValue)
-		f.print(symbols.DBCAttributeAssignment, formatString(nodeAss.attName), symbols.DBCNode, nodeAss.nodeName, srtValue, ";")
+func (w *DBCWriter) writeAttAssignments(f *file, canModel *CanModel) {
+	for _, nodeAss := range canModel.getNodeAttAssignments() {
+		srtValue := w.getAttAssignmentValue(nodeAss.attAssignmentVal)
+		f.print(symbols.DBCAttAssignment, formatString(nodeAss.attName), symbols.DBCNode, nodeAss.nodeName, srtValue, ";")
 	}
 
-	for _, msgAss := range canModel.getMessageAttributeAssignments() {
-		srtValue := w.getAttributeAssignmentValue(msgAss.attributeAssignmentValue)
-		f.print(symbols.DBCAttributeAssignment, formatString(msgAss.attName), symbols.DBCMessage, formatUint(msgAss.messageID), srtValue, ";")
+	for _, msgAss := range canModel.getMessageAttAssignments() {
+		srtValue := w.getAttAssignmentValue(msgAss.attAssignmentVal)
+		f.print(symbols.DBCAttAssignment, formatString(msgAss.attName), symbols.DBCMessage, formatUint(msgAss.messageID), srtValue, ";")
 	}
 
-	for _, sigAss := range canModel.getSignalAttributeAssignments() {
-		srtValue := w.getAttributeAssignmentValue(sigAss.attributeAssignmentValue)
-		f.print(symbols.DBCAttributeAssignment, formatString(sigAss.attName), symbols.DBCSignal, formatUint(sigAss.messageID), sigAss.signalName, srtValue, ";")
+	for _, sigAss := range canModel.getSignalAttAssignments() {
+		srtValue := w.getAttAssignmentValue(sigAss.attAssignmentVal)
+		f.print(symbols.DBCAttAssignment, formatString(sigAss.attName), symbols.DBCSignal, formatUint(sigAss.messageID), sigAss.signalName, srtValue, ";")
 	}
 }

@@ -26,7 +26,7 @@ func (m *Message) validate(msgName string, msgAtt map[string]*Attribute, sigAtt 
 
 	for _, signal := range m.Signals {
 		if err := signal.validate(sigAtt); err != nil {
-			return err
+			return fmt.Errorf("message %s: %w", m.name, err)
 		}
 	}
 

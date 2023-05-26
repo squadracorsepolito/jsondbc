@@ -1,6 +1,11 @@
 {
     "version": "1.0",
     "bus_speed": 9600,
+    "node_attributes": {
+        "TestString": {
+            "string": {}
+        }
+    },
     "message_attributes": {
         "VFrameFormat": {
             "enum": {
@@ -27,7 +32,10 @@
             "description": "Node1 desc"
         },
         "Node2": {
-            "description": "Node2 desc"
+            "description": "Node2 desc",
+            "string_attributes": {
+                "TestString": "test"
+            }
         }
     },
     "messages": {
