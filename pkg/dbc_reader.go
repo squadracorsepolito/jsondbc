@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -256,7 +255,17 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 					} else if sig, ok := extMuxSignals[msgName][sigComment.signalName]; ok {
 						sig.Description = sigComment.description
 					} else {
-						return nil, r.lineErr(fmt.Sprintf("signaal %s in message %d doesn't exist", sigComment.signalName, sigComment.messageID))
+						for _, muxorSig := range msg.Signals {
+							if muxorSig.isMultiplexor {
+								if muxedSig, ok := muxorSig.MuxGroup[sigComment.signalName]; ok {
+									muxedSig.Description = sigComment.description
+									break
+								}
+
+								return nil, r.lineErr(fmt.Sprintf("signal %s in message %d doesn't exist", sigComment.signalName, sigComment.messageID))
+							}
+						}
+
 					}
 
 					found = true
@@ -318,11 +327,14 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 
 	attLineNumbers := []int{}
 	attDefValLineNumbers := []int{}
-	for lineNum, line := range lines {
+	for n, line := range lines {
 		if strings.HasPrefix(line, symbols.DBCAttDef+" ") {
-			attLineNumbers = append(attLineNumbers, lineNum)
-		} else if strings.HasPrefix(line, symbols.DBCAttDefaultVal+" ") {
-			attDefValLineNumbers = append(attDefValLineNumbers, lineNum)
+			attLineNumbers = append(attLineNumbers, n)
+			continue
+		}
+		if strings.HasPrefix(line, symbols.DBCAttDefaultVal+" ") {
+			attDefValLineNumbers = append(attDefValLineNumbers, n)
+			continue
 		}
 	}
 
@@ -372,7 +384,6 @@ func (r *DBCReader) Read(file *os.File) (*CanModel, error) {
 				att.String.Default = defAttVal.stringVal
 			case attributeTypeEnum:
 				enumIdx := defAttVal.intVal
-				log.Print(att)
 				if enumIdx >= 0 && enumIdx < len(att.Enum.Values) {
 					att.Enum.Default = att.Enum.Values[enumIdx]
 					att.Enum.defaultIdx = enumIdx
@@ -421,7 +432,10 @@ func (r *DBCReader) handleAttributes(lineNumbers []int) ([]*Attribute, error) {
 		line := r.fileLines[idx]
 		att, err := r.readAttribute(line)
 		if err != nil {
-			return nil, fmt.Errorf("line %d: %w", idx, err)
+			if errors.Is(err, errRegexNoMatch) {
+				continue
+			}
+			return nil, fmt.Errorf("line %d: attribute: %w", idx, err)
 		}
 		attributes = append(attributes, att)
 	}
@@ -563,7 +577,7 @@ func (r *DBCReader) handleDefaultAttributeValues(lineNumbers []int) ([]*dbcDefAt
 		line := r.fileLines[idx]
 		attVal, err := r.readDefaultAttributeValue(line)
 		if err != nil {
-			return nil, fmt.Errorf("line %d: %w", idx, err)
+			return nil, fmt.Errorf("line %d: default attribute value: %w", idx, err)
 		}
 		attValues = append(attValues, attVal)
 	}
@@ -585,8 +599,6 @@ func (r *DBCReader) readDefaultAttributeValue(line string) (*dbcDefAttVal, error
 	if len(strVal) == 2 {
 		return attVal, nil
 	}
-
-	log.Print(strVal)
 
 	re := regexp.MustCompile(`^"(?P<val>\w+)"$`)
 	submatch, err := applyRegex(re, strVal)
