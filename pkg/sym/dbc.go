@@ -1,5 +1,5 @@
-// Package symbols contains the symbols used by the generator
-package symbols
+// Package sym contains the symbols used by the generator
+package sym
 
 // DBC symbols
 const (

@@ -1,10 +1,8 @@
 package pkg
 
-import "fmt"
-
 // Signal represents a CAN signal in a message.
 type Signal struct {
-	attributeAssignment
+	*AttributeAssignments
 	Description string             `json:"description,omitempty"`
 	MuxSwitch   uint32             `json:"mux_switch,omitempty"`
 	StartBit    uint32             `json:"start_bit"`
@@ -25,6 +23,21 @@ type Signal struct {
 	isMultiplexed bool
 }
 
+func (s *Signal) initSignal(sigName string) {
+	s.name = sigName
+
+	if s.AttributeAssignments == nil {
+		s.AttributeAssignments = &AttributeAssignments{
+			Attributes: make(map[string]any),
+		}
+	}
+
+	if len(s.MuxGroup) > 0 {
+		s.isMultiplexor = true
+	}
+}
+
+/*
 func (s *Signal) validate(sigAtt map[string]*Attribute) error {
 	if s.Scale == 0 {
 		s.Scale = 1
@@ -35,7 +48,7 @@ func (s *Signal) validate(sigAtt map[string]*Attribute) error {
 	}
 
 	return nil
-}
+}*/
 
 // IsBitmap returns true if the signal is a bitmap.
 func (s *Signal) IsBitmap() bool {

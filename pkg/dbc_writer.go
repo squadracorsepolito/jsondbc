@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/FerroO2000/canconv/pkg/symbols"
+	"github.com/FerroO2000/canconv/pkg/sym"
 )
 
 const dbcDefNode = "Vector__XXX"
@@ -49,7 +49,7 @@ func NewDBCWriter() *DBCWriter {
 func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	f := newFile(file)
 
-	f.print(symbols.DBCVersion, formatString(canModel.Version))
+	f.print(sym.DBCVersion, formatString(canModel.Version))
 	f.print(dbcHeaders)
 
 	w.writeBusSpeed(f, canModel.BusSpeed)
@@ -74,7 +74,10 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	for _, att := range canModel.getAttributes() {
 		w.writeAttributeDefaultValue(f, att)
 	}
-	w.writeAttAssignments(f, canModel)
+
+	w.writeNodeAttributeAssignments(f, canModel.getNodeAttributes())
+	w.writeMessageAttributeAssignments(f, canModel.getMessageAttributes())
+	w.writeSignalAttributeAssignments(f, canModel.getSignalAttributes())
 
 	return nil
 }
@@ -84,7 +87,7 @@ func (w *DBCWriter) writeBusSpeed(f *file, speed uint32) {
 	if speed > 0 {
 		strSpeed = formatUint(speed)
 	}
-	f.print(symbols.DBCBusSpeed, ":", strSpeed)
+	f.print(sym.DBCBusSpeed, ":", strSpeed)
 	f.print()
 }
 
@@ -94,7 +97,7 @@ func (w *DBCWriter) writeNodes(f *file, nodes map[string]*Node) {
 		nodeNames = append(nodeNames, nodeName)
 	}
 
-	str := []string{symbols.DBCNode, ":"}
+	str := []string{sym.DBCNode, ":"}
 	str = append(str, nodeNames...)
 	f.print(str...)
 	f.print()
@@ -107,7 +110,7 @@ func (w *DBCWriter) writeMessage(f *file, msgName string, msg *Message) {
 	if sender == "" {
 		sender = dbcDefNode
 	}
-	f.print(symbols.DBCMessage, id, msgName+":", length, sender)
+	f.print(sym.DBCMessage, id, msgName+":", length, sender)
 
 	for sigName, sig := range msg.Signals {
 		w.writeSignal(f, sigName, sig, false)
@@ -117,9 +120,9 @@ func (w *DBCWriter) writeMessage(f *file, msgName string, msg *Message) {
 }
 
 func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
-	byteOrder := 0
+	byteOrder := 1
 	if sig.BigEndian {
-		byteOrder = 1
+		byteOrder = 0
 	}
 	valueType := "+"
 	if sig.Signed {
@@ -155,7 +158,7 @@ func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexe
 		}
 	}
 
-	f.print("\t", symbols.DBCSignal, sigName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
+	f.print("\t", sym.DBCSignal, sigName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
 func (w *DBCWriter) writeMuxGroup(f *file, messages map[string]*Message) {
@@ -191,12 +194,12 @@ func (w *DBCWriter) writeExtMuxValue(f *file, msgID, muxSigName, sigName string,
 		}
 	}
 
-	f.print(symbols.DBCExtMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
+	f.print(sym.DBCExtMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
 }
 
 func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
 	for _, msg := range m.Messages {
-		for sigName, sig := range msg.Signals {
+		for sigName, sig := range msg.childSignals {
 			if sig.IsBitmap() {
 				bitmap := ""
 				first := true
@@ -208,7 +211,7 @@ func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
 					}
 					bitmap += " " + formatUint(val) + " " + formatString(name)
 				}
-				f.print(symbols.DBCValue, msg.FormatID(), sigName, bitmap, ";")
+				f.print(sym.DBCValue, msg.FormatID(), sigName, bitmap, ";")
 			}
 		}
 	}
@@ -226,14 +229,14 @@ func (w *DBCWriter) writeComments(f *file, m *CanModel) {
 
 func (w *DBCWriter) writeNodeComment(f *file, nodeName string, node *Node) {
 	if node.HasDescription() {
-		f.print(symbols.DBCComment, symbols.DBCNode, nodeName, formatString(node.Description), ";")
+		f.print(sym.DBCComment, sym.DBCNode, nodeName, formatString(node.Description), ";")
 	}
 }
 
 func (w *DBCWriter) writeMessageComment(f *file, msg *Message) {
 	msgID := msg.FormatID()
 	if msg.HasDescription() {
-		f.print(symbols.DBCComment, symbols.DBCMessage, msgID, formatString(msg.Description), ";")
+		f.print(sym.DBCComment, sym.DBCMessage, msgID, formatString(msg.Description), ";")
 	}
 
 	for sigName, sig := range msg.Signals {
@@ -243,7 +246,7 @@ func (w *DBCWriter) writeMessageComment(f *file, msg *Message) {
 
 func (w *DBCWriter) writeSignalComment(f *file, msgID, sigName string, sig *Signal) {
 	if sig.HasDescription() {
-		f.print(symbols.DBCComment, symbols.DBCSignal, msgID, sigName, formatString(sig.Description), ";")
+		f.print(sym.DBCComment, sym.DBCSignal, msgID, sigName, formatString(sig.Description), ";")
 	}
 
 	if sig.IsMultiplexor() {
@@ -257,11 +260,11 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 	attKindStr := ""
 	switch att.attributeKind {
 	case attributeKindNode:
-		attKindStr = symbols.DBCNode
+		attKindStr = sym.DBCNode
 	case attributeKindMessage:
-		attKindStr = symbols.DBCMessage
+		attKindStr = sym.DBCMessage
 	case attributeKindSignal:
-		attKindStr = symbols.DBCSignal
+		attKindStr = sym.DBCSignal
 	}
 
 	strValues := ""
@@ -281,7 +284,7 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 		}
 	}
 
-	f.print(symbols.DBCAttDef, attKindStr, formatString(att.name), strValues, ";")
+	f.print(sym.DBCAttDef, attKindStr, formatString(att.name), strValues, ";")
 }
 
 func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
@@ -295,35 +298,34 @@ func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
 		defValue = formatInt(att.Enum.defaultIdx)
 	}
 
-	f.print(symbols.DBCAttDefaultVal, formatString(att.name), defValue, ";")
+	f.print(sym.DBCAttDefaultVal, formatString(att.name), defValue, ";")
 }
 
-func (w *DBCWriter) getAttAssignmentValue(ass attAssignmentVal) string {
-	strVal := ""
-	switch ass.attType {
-	case attributeTypeInt:
-		strVal = formatInt(ass.intAttValue)
-	case attributeTypeString:
-		strVal = formatString(ass.stringAttValue)
-	case attributeTypeEnum:
-		strVal = formatInt(ass.enumAttValue)
+func (w *DBCWriter) writeNodeAttributeAssignments(f *file, attributes []*NodeAttribute) {
+	for _, nodeAtt := range attributes {
+		for _, node := range nodeAtt.assignedNodes {
+			value := node.getAttributeValue(nodeAtt.name, nodeAtt.attributeType, nodeAtt.Enum)
+			f.print(sym.DBCAttAssignment, formatString(nodeAtt.name), sym.DBCNode, node.name, value, ";")
+		}
 	}
-	return strVal
 }
 
-func (w *DBCWriter) writeAttAssignments(f *file, canModel *CanModel) {
-	for _, nodeAss := range canModel.getNodeAttAssignments() {
-		srtValue := w.getAttAssignmentValue(nodeAss.attAssignmentVal)
-		f.print(symbols.DBCAttAssignment, formatString(nodeAss.attName), symbols.DBCNode, nodeAss.nodeName, srtValue, ";")
+func (w *DBCWriter) writeMessageAttributeAssignments(f *file, attributes []*MessageAttribute) {
+	for _, msgAtt := range attributes {
+		for _, msg := range msgAtt.assignedMessages {
+			value := msg.getAttributeValue(msgAtt.name, msgAtt.attributeType, msgAtt.Enum)
+			f.print(sym.DBCAttAssignment, formatString(msgAtt.name), sym.DBCMessage, formatUint(msg.ID), value, ";")
+		}
 	}
+}
 
-	for _, msgAss := range canModel.getMessageAttAssignments() {
-		srtValue := w.getAttAssignmentValue(msgAss.attAssignmentVal)
-		f.print(symbols.DBCAttAssignment, formatString(msgAss.attName), symbols.DBCMessage, formatUint(msgAss.messageID), srtValue, ";")
-	}
-
-	for _, sigAss := range canModel.getSignalAttAssignments() {
-		srtValue := w.getAttAssignmentValue(sigAss.attAssignmentVal)
-		f.print(symbols.DBCAttAssignment, formatString(sigAss.attName), symbols.DBCSignal, formatUint(sigAss.messageID), sigAss.signalName, srtValue, ";")
+func (w *DBCWriter) writeSignalAttributeAssignments(f *file, attributes []*SignalAttribute) {
+	for _, sigAtt := range attributes {
+		for msgID, sigMap := range sigAtt.assignedSignals {
+			for _, sig := range sigMap {
+				value := sig.getAttributeValue(sigAtt.name, sigAtt.attributeType, sigAtt.Enum)
+				f.print(sym.DBCAttAssignment, formatString(sigAtt.name), sym.DBCSignal, formatUint(msgID), sig.name, value, ";")
+			}
+		}
 	}
 }

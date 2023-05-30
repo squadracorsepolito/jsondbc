@@ -1,14 +1,10 @@
 package pkg
 
-import (
-	"errors"
-	"fmt"
-)
-
 type attributeKind uint8
 
 const (
-	attributeKindNode attributeKind = iota
+	attributeKindGeneral attributeKind = iota
+	attributeKindNode
 	attributeKindMessage
 	attributeKindSignal
 )
@@ -31,6 +27,27 @@ type Attribute struct {
 	attributeType attributeType
 }
 
+func (a *Attribute) initAttribute(attName string) {
+	a.name = attName
+
+	if a.Int != nil {
+		a.attributeType = attributeTypeInt
+		return
+	}
+
+	if a.String != nil {
+		a.attributeType = attributeTypeString
+		return
+	}
+
+	if a.Enum != nil {
+		a.attributeType = attributeTypeEnum
+		a.Enum.initAttributeEnum()
+		return
+	}
+}
+
+/*
 func (a *Attribute) validate(name string, kind attributeKind) error {
 	a.name = name
 	a.attributeKind = kind
@@ -52,7 +69,7 @@ func (a *Attribute) validate(name string, kind attributeKind) error {
 	}
 
 	return nil
-}
+}*/
 
 type AttributeInt struct {
 	Default int `json:"default"`
@@ -60,12 +77,13 @@ type AttributeInt struct {
 	To      int `json:"to"`
 }
 
+/*
 func (ai *AttributeInt) validate() error {
 	if ai.Default < ai.From || ai.Default > ai.To {
 		return fmt.Errorf("default value %d is not in range [%d, %d]", ai.Default, ai.From, ai.To)
 	}
 	return nil
-}
+}*/
 
 type AttributeString struct {
 	Default string `json:"default"`
@@ -78,6 +96,22 @@ type AttributeEnum struct {
 	defaultIdx int
 }
 
+func (ae *AttributeEnum) initAttributeEnum() {
+	ae.defaultIdx = 0
+
+	if ae.Default == "" {
+		return
+	}
+
+	for idx, value := range ae.Values {
+		if value == ae.Default {
+			ae.defaultIdx = idx
+			return
+		}
+	}
+}
+
+/*
 func (ae *AttributeEnum) validate() error {
 	if ae.Default == "" {
 		ae.defaultIdx = 0
@@ -93,8 +127,135 @@ func (ae *AttributeEnum) validate() error {
 	}
 
 	return fmt.Errorf("default value %s is not part of the enum, valid values are %v", ae.Default, ae.Values)
+}*/
+
+type NodeAttribute struct {
+	*Attribute
+
+	assignedNodes map[string]*Node
 }
 
+func newNodeAttribute(att *Attribute) *NodeAttribute {
+	return &NodeAttribute{
+		Attribute: att,
+
+		assignedNodes: make(map[string]*Node),
+	}
+}
+
+func (na *NodeAttribute) initNodeAttribute(attName string) {
+	na.attributeKind = attributeKindNode
+	if na.assignedNodes == nil {
+		na.assignedNodes = make(map[string]*Node)
+	}
+	na.initAttribute(attName)
+}
+
+func (na *NodeAttribute) asAttribute() *Attribute {
+	return na.Attribute
+}
+
+func (na *NodeAttribute) assignNode(node *Node) {
+	na.assignedNodes[node.name] = node
+}
+
+type MessageAttribute struct {
+	*Attribute
+
+	assignedMessages map[uint32]*Message
+}
+
+func newMessageAttribute(att *Attribute) *MessageAttribute {
+	return &MessageAttribute{
+		Attribute: att,
+
+		assignedMessages: make(map[uint32]*Message),
+	}
+}
+
+func (ma *MessageAttribute) initMessageAttribute(attName string) {
+	ma.attributeKind = attributeKindMessage
+	if ma.assignedMessages == nil {
+		ma.assignedMessages = make(map[uint32]*Message)
+	}
+	ma.initAttribute(attName)
+}
+
+func (ma *MessageAttribute) asAttribute() *Attribute {
+	return ma.Attribute
+}
+
+func (ma *MessageAttribute) assignMessage(msg *Message) {
+	ma.assignedMessages[msg.ID] = msg
+}
+
+type SignalAttribute struct {
+	*Attribute
+
+	assignedSignals map[uint32]map[string]*Signal
+}
+
+func newSignalAttribute(att *Attribute) *SignalAttribute {
+	return &SignalAttribute{
+		Attribute: att,
+
+		assignedSignals: make(map[uint32]map[string]*Signal),
+	}
+}
+
+func (sa *SignalAttribute) initSignalAttribute(attName string) {
+	sa.attributeKind = attributeKindSignal
+	if sa.assignedSignals == nil {
+		sa.assignedSignals = make(map[uint32]map[string]*Signal)
+	}
+	sa.initAttribute(attName)
+}
+
+func (sa *SignalAttribute) asAttribute() *Attribute {
+	return sa.Attribute
+}
+
+func (sa *SignalAttribute) assignSignal(msgID uint32, signal *Signal) {
+	if msg, ok := sa.assignedSignals[msgID]; ok {
+		msg[signal.name] = signal
+		return
+	}
+
+	sa.assignedSignals[msgID] = make(map[string]*Signal)
+	sa.assignedSignals[msgID][signal.name] = signal
+}
+
+type AttributeAssignments struct {
+	Attributes map[string]any `json:"attributes,omitempty"`
+}
+
+func (aa *AttributeAssignments) getAttributeValue(attName string, attType attributeType, enumAtt *AttributeEnum) string {
+	att, ok := aa.Attributes[attName]
+	if !ok {
+		return ""
+	}
+
+	switch att.(type) {
+	case int:
+		return formatInt(att.(int))
+
+	case string:
+		if attType == attributeTypeString {
+			return formatString(att.(string))
+		}
+
+		tmp := att.(string)
+		for idx, val := range enumAtt.Values {
+			if val == tmp {
+				return formatInt(idx)
+			}
+		}
+	}
+
+	return ""
+}
+
+/*
 type attributeAssignment struct {
 	IntAttributes    map[string]int    `json:"int_attributes,omitempty"`
 	StringAttributes map[string]string `json:"string_attributes,omitempty"`
@@ -189,3 +350,4 @@ func (aa *attributeAssignment) getAttAssignmentValues() []*attAssignmentVal {
 
 	return values
 }
+*/

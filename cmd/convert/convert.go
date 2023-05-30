@@ -67,6 +67,7 @@ func convert() error {
 		return err
 	}
 
+	canModel.Init()
 	if err := canModel.Validate(); err != nil {
 		return err
 	}
