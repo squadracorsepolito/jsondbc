@@ -2,63 +2,84 @@
 package convert
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/FerroO2000/canconv/pkg"
 	"github.com/spf13/cobra"
 )
 
 var (
-	extension  string
-	inputFile  string
-	outputFile string
+	extension   string
+	inFileName  string
+	outFileName string
 )
 
 const (
-	fileDBC = "dbc"
+	dbcExt  = ".dbc"
+	jsonExt = ".json"
 )
 
+var validInExt = []string{jsonExt, dbcExt}
+var validOutExt = []string{jsonExt, dbcExt}
+
 // convert is the handler for the convert command.
-// It opens the input file, reads it and converts it to the specified extension.
+// It opens the input file, reads, converts and write into the output file.
 func convert() error {
-	jsonFile, err := os.Open(inputFile)
+	var reader pkg.Reader
+	var writer pkg.Writer
+
+	inExt := filepath.Ext(inFileName)
+	switch inExt {
+	case jsonExt:
+		reader = pkg.NewJsonReader()
+	case dbcExt:
+		reader = pkg.NewDBCReader()
+
+	default:
+		return fmt.Errorf("%s extension is not supported as input file", inExt)
+	}
+
+	if outFileName == "" {
+		outFileName = inFileName[:len(inFileName)-len(inExt)] + extension
+	}
+	outExt := filepath.Ext(outFileName)
+	switch outExt {
+	case jsonExt:
+		writer = pkg.NewJsonWriter()
+	case dbcExt:
+		writer = pkg.NewDBCWriter()
+
+	default:
+		return fmt.Errorf("%s extension is not supported as output file", outExt)
+	}
+
+	inFile, err := os.Open(inFileName)
 	if err != nil {
 		return err
 	}
-	defer jsonFile.Close()
+	defer inFile.Close()
 
-	byteFile, err := ioutil.ReadAll(jsonFile)
+	canModel, err := reader.Read(inFile)
 	if err != nil {
 		return err
 	}
 
-	model := &pkg.CanModel{}
-	if err := json.Unmarshal(byteFile, model); err != nil {
+	canModel.Init()
+	if err := canModel.Validate(); err != nil {
 		return err
 	}
 
-	if err := model.Validate(); err != nil {
-		return err
-	}
-
-	if outputFile == "" {
-		outputFile = inputFile[:len(inputFile)-len("json")-1] + "." + extension
-	}
-	outFile, err := os.Create(outputFile)
+	outFile, err := os.Create(outFileName)
 	if err != nil {
 		return err
 	}
 	defer outFile.Close()
 
-	switch extension {
-	case fileDBC:
-		generator := pkg.NewDBCGenerator()
-		generator.Generate(model, outFile)
-
-	default:
+	if err := writer.Write(outFile, canModel); err != nil {
+		return err
 	}
 
 	return nil
@@ -76,18 +97,18 @@ var ConvertCmd = &cobra.Command{
 
 // init initializes the flags for the convert command.
 func init() {
-	ConvertCmd.Flags().StringVar(&inputFile, "in", "", "Sets the input file")
-	if err := ConvertCmd.MarkFlagFilename("in", "json"); err != nil {
+	ConvertCmd.Flags().StringVar(&inFileName, "in", "", "Sets the input file")
+	if err := ConvertCmd.MarkFlagFilename("in", validInExt...); err != nil {
 		log.Fatal(err)
 	}
 	if err := ConvertCmd.MarkFlagRequired("in"); err != nil {
 		log.Fatal(err)
 	}
 
-	ConvertCmd.Flags().StringVar(&extension, "ext", "dbc", "Sets the output file extension")
+	ConvertCmd.Flags().StringVarP(&extension, "ext", "e", dbcExt, "Sets the output file extension")
 
-	ConvertCmd.Flags().StringVar(&outputFile, "out", "", "Sets the output file")
-	if err := ConvertCmd.MarkFlagFilename("out", extension); err != nil {
+	ConvertCmd.Flags().StringVar(&outFileName, "out", "", "Sets the output file")
+	if err := ConvertCmd.MarkFlagFilename("out", validOutExt...); err != nil {
 		log.Fatal(err)
 	}
 }
