@@ -18,13 +18,13 @@ type Signal struct {
 	Bitmap      map[string]uint32  `json:"bitmap,omitempty"`
 	MuxGroup    map[string]*Signal `json:"mux_group,omitempty"`
 
-	name          string
+	signalName    string
 	isMultiplexor bool
 	isMultiplexed bool
 }
 
 func (s *Signal) initSignal(sigName string) {
-	s.name = sigName
+	s.signalName = sigName
 
 	if s.AttributeAssignments == nil {
 		s.AttributeAssignments = &AttributeAssignments{
@@ -36,19 +36,6 @@ func (s *Signal) initSignal(sigName string) {
 		s.isMultiplexor = true
 	}
 }
-
-/*
-func (s *Signal) validate(sigAtt map[string]*Attribute) error {
-	if s.Scale == 0 {
-		s.Scale = 1
-	}
-
-	if err := s.attributeAssignment.validate(sigAtt); err != nil {
-		return fmt.Errorf("signal %s: %w", s.name, err)
-	}
-
-	return nil
-}*/
 
 // IsBitmap returns true if the signal is a bitmap.
 func (s *Signal) IsBitmap() bool {

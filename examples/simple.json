@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "bus_speed": 9600,
+    "bound_rate": 9600,
     "node_attributes": {
         "TestString": {
             "string": {}

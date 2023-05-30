@@ -145,7 +145,7 @@ func (r *textReader) read() (*CanModel, error) {
 			if err != nil {
 				return nil, err
 			}
-			canModel.BusSpeed = busSpeed
+			canModel.BoundRate = busSpeed
 			continue
 		}
 		if strings.HasPrefix(line, r.cfg.nodeIdent) {
@@ -306,7 +306,7 @@ func (r *textReader) handleMessages(lineIdxs []int) (map[string]*Message, error)
 		if err != nil {
 			return nil, r.getError(lineIdx, err.Error())
 		}
-		messages[msg.name] = msg
+		messages[msg.messageName] = msg
 	}
 	return messages, nil
 }
@@ -337,7 +337,7 @@ func (r *textReader) readMessage(lineIdx int) (*Message, error) {
 			Attributes: make(map[string]any),
 		},
 
-		name: name,
+		messageName: name,
 	}
 
 	splMuxSigs := make(map[string]*Signal)
@@ -356,12 +356,12 @@ func (r *textReader) readMessage(lineIdx int) (*Message, error) {
 		}
 
 		if !sig.isMultiplexed {
-			msg.Signals[sig.name] = sig
+			msg.Signals[sig.signalName] = sig
 			continue
 		}
 
 		if sig.isMultiplexed && !sig.isMultiplexor && !isExtMux {
-			splMuxSigs[sig.name] = sig
+			splMuxSigs[sig.signalName] = sig
 			continue
 		}
 
@@ -373,7 +373,7 @@ func (r *textReader) readMessage(lineIdx int) (*Message, error) {
 			}
 		}
 
-		extMuxSigs[sig.name] = sig
+		extMuxSigs[sig.signalName] = sig
 	}
 
 	if len(splMuxSigs) > 0 {
@@ -497,7 +497,7 @@ func (r *textReader) readSignal(lineIdx int) (*Signal, error) {
 			Attributes: make(map[string]any),
 		},
 
-		name:          sigName,
+		signalName:    sigName,
 		isMultiplexor: isMultiplexor,
 		isMultiplexed: isMultiplexed,
 	}, nil
@@ -533,7 +533,7 @@ func (r *textReader) handleBitmapDefinitions(lineIdxs []int) error {
 }
 
 func (r *textReader) setBitmapDefinitionRec(sig *Signal, bitmapDef *bitmapDefinition) bool {
-	if sig.name == bitmapDef.sigName {
+	if sig.signalName == bitmapDef.sigName {
 		sig.Bitmap = bitmapDef.bitmap
 		return true
 	}
@@ -655,7 +655,7 @@ func (r *textReader) handleComments(lineIdxs []int) error {
 }
 
 func (r *textReader) setSignalCommentRec(sig *Signal, comment *sigComment) bool {
-	if sig.name == comment.sigName {
+	if sig.signalName == comment.sigName {
 		sig.Description = comment.desc
 		return true
 	}
@@ -737,13 +737,13 @@ func (r *textReader) handleAttributes(lineIdxs []int) error {
 
 		switch att.attributeKind {
 		case attributeKindGeneral:
-			genAtt[att.name] = att
+			genAtt[att.attributeName] = att
 		case attributeKindNode:
-			nodeAtt[att.name] = &NodeAttribute{Attribute: att}
+			nodeAtt[att.attributeName] = &NodeAttribute{Attribute: att}
 		case attributeKindMessage:
-			msgAtt[att.name] = &MessageAttribute{Attribute: att}
+			msgAtt[att.attributeName] = &MessageAttribute{Attribute: att}
 		case attributeKindSignal:
-			sigAtt[att.name] = &SignalAttribute{Attribute: att}
+			sigAtt[att.attributeName] = &SignalAttribute{Attribute: att}
 		}
 	}
 
@@ -775,7 +775,7 @@ func (r *textReader) readAttribute(lineIdx int) (*Attribute, error) {
 		att.attributeKind = attributeKindGeneral
 	}
 
-	att.name = match[r.attReg.SubexpIndex("att_name")]
+	att.attributeName = match[r.attReg.SubexpIndex("att_name")]
 
 	attType := match[r.attReg.SubexpIndex("att_type")]
 	attData := strings.TrimSpace(match[r.attReg.SubexpIndex("att_data")])
@@ -1046,7 +1046,7 @@ func (r *textReader) handleAttributeAssignments(lineIdxs []int) error {
 }
 
 func (r *textReader) setSignalAttributeAssignmentRec(sig *Signal, sigAss *sigAttAss) (bool, error) {
-	if sig.name == sigAss.sigName {
+	if sig.signalName == sigAss.sigName {
 		if att, ok := r.canModel.SignalAttributes[sigAss.attName]; ok {
 			enumValues := []string{}
 			if att.attributeType == attributeTypeEnum {

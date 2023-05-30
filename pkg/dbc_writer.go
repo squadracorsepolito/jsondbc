@@ -52,7 +52,7 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	f.print(sym.DBCVersion, formatString(canModel.Version))
 	f.print(dbcHeaders)
 
-	w.writeBusSpeed(f, canModel.BusSpeed)
+	w.writeBusSpeed(f, canModel.BoundRate)
 	w.writeNodes(f, canModel.Nodes)
 
 	for msgName, msg := range canModel.Messages {
@@ -284,7 +284,7 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 		}
 	}
 
-	f.print(sym.DBCAttDef, attKindStr, formatString(att.name), strValues, ";")
+	f.print(sym.DBCAttDef, attKindStr, formatString(att.attributeName), strValues, ";")
 }
 
 func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
@@ -298,14 +298,14 @@ func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
 		defValue = formatInt(att.Enum.defaultIdx)
 	}
 
-	f.print(sym.DBCAttDefaultVal, formatString(att.name), defValue, ";")
+	f.print(sym.DBCAttDefaultVal, formatString(att.attributeName), defValue, ";")
 }
 
 func (w *DBCWriter) writeNodeAttributeAssignments(f *file, attributes []*NodeAttribute) {
 	for _, nodeAtt := range attributes {
 		for _, node := range nodeAtt.assignedNodes {
-			value := node.getAttributeValue(nodeAtt.name, nodeAtt.attributeType, nodeAtt.Enum)
-			f.print(sym.DBCAttAssignment, formatString(nodeAtt.name), sym.DBCNode, node.name, value, ";")
+			value := node.getAttributeValue(nodeAtt.attributeName, nodeAtt.attributeType, nodeAtt.Enum)
+			f.print(sym.DBCAttAssignment, formatString(nodeAtt.attributeName), sym.DBCNode, node.nodeName, value, ";")
 		}
 	}
 }
@@ -313,8 +313,8 @@ func (w *DBCWriter) writeNodeAttributeAssignments(f *file, attributes []*NodeAtt
 func (w *DBCWriter) writeMessageAttributeAssignments(f *file, attributes []*MessageAttribute) {
 	for _, msgAtt := range attributes {
 		for _, msg := range msgAtt.assignedMessages {
-			value := msg.getAttributeValue(msgAtt.name, msgAtt.attributeType, msgAtt.Enum)
-			f.print(sym.DBCAttAssignment, formatString(msgAtt.name), sym.DBCMessage, formatUint(msg.ID), value, ";")
+			value := msg.getAttributeValue(msgAtt.attributeName, msgAtt.attributeType, msgAtt.Enum)
+			f.print(sym.DBCAttAssignment, formatString(msgAtt.attributeName), sym.DBCMessage, formatUint(msg.ID), value, ";")
 		}
 	}
 }
@@ -323,8 +323,8 @@ func (w *DBCWriter) writeSignalAttributeAssignments(f *file, attributes []*Signa
 	for _, sigAtt := range attributes {
 		for msgID, sigMap := range sigAtt.assignedSignals {
 			for _, sig := range sigMap {
-				value := sig.getAttributeValue(sigAtt.name, sigAtt.attributeType, sigAtt.Enum)
-				f.print(sym.DBCAttAssignment, formatString(sigAtt.name), sym.DBCSignal, formatUint(msgID), sig.name, value, ";")
+				value := sig.getAttributeValue(sigAtt.attributeName, sigAtt.attributeType, sigAtt.Enum)
+				f.print(sym.DBCAttAssignment, formatString(sigAtt.attributeName), sym.DBCSignal, formatUint(msgID), sig.signalName, value, ";")
 			}
 		}
 	}

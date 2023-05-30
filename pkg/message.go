@@ -4,10 +4,6 @@ import (
 	"strconv"
 )
 
-type attributes struct {
-	Attributes map[string]any `json:"attributes"`
-}
-
 // Message represents a CAN message.
 type Message struct {
 	*AttributeAssignments
@@ -17,7 +13,7 @@ type Message struct {
 	Sender      string             `json:"sender,omitempty"`
 	Signals     map[string]*Signal `json:"signals"`
 
-	name         string
+	messageName  string
 	childSignals map[string]*Signal
 }
 
@@ -34,7 +30,7 @@ func (m *Message) initSignalRec(sigName string, sig *Signal) {
 }
 
 func (m *Message) initMessage(msgName string) {
-	m.name = msgName
+	m.messageName = msgName
 
 	if m.AttributeAssignments == nil {
 		m.AttributeAssignments = &AttributeAssignments{
@@ -57,23 +53,6 @@ func (m *Message) initMessage(msgName string) {
 	}
 
 }
-
-/*
-func (m *Message) validate(msgName string, msgAtt map[string]*Attribute, sigAtt map[string]*Attribute) error {
-	m.name = msgName
-
-	if err := m.attributeAssignment.validate(msgAtt); err != nil {
-		return fmt.Errorf("message %s: %w", m.name, err)
-	}
-
-	for _, signal := range m.Signals {
-		if err := signal.validate(sigAtt); err != nil {
-			return fmt.Errorf("message %s: %w", m.name, err)
-		}
-	}
-
-	return nil
-}*/
 
 // HasDescription returns true if the message has a description.
 func (m *Message) HasDescription() bool {

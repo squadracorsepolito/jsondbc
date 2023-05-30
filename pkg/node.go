@@ -5,11 +5,11 @@ type Node struct {
 	*AttributeAssignments
 	Description string `json:"description,omitempty"`
 
-	name string
+	nodeName string
 }
 
 func (n *Node) initNode(nodeName string) {
-	n.name = nodeName
+	n.nodeName = nodeName
 
 	if n.AttributeAssignments == nil {
 		n.AttributeAssignments = &AttributeAssignments{
@@ -17,16 +17,6 @@ func (n *Node) initNode(nodeName string) {
 		}
 	}
 }
-
-/*
-func (n *Node) validate(nodeName string, nodeAtt map[string]*Attribute) error {
-	n.name = nodeName
-	if err := n.attributeAssignment.validate(nodeAtt); err != nil {
-		return fmt.Errorf("node %s: %w", n.name, err)
-	}
-
-	return nil
-}*/
 
 // HasDescription returns true if the node has a description.
 func (n *Node) HasDescription() bool {

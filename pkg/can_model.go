@@ -15,7 +15,7 @@ type Writer interface {
 // CanModel represents the CAN model.
 type CanModel struct {
 	Version           string                       `json:"version"`
-	BusSpeed          uint32                       `json:"bus_speed"`
+	BoundRate         uint32                       `json:"bound_rate"`
 	Nodes             map[string]*Node             `json:"nodes"`
 	GeneralAttributes map[string]*Attribute        `json:"general_attributes"`
 	NodeAttributes    map[string]*NodeAttribute    `json:"node_attributes"`
@@ -60,7 +60,7 @@ func (c *CanModel) Init() {
 			}
 		}
 
-		for _, sig := range msg.Signals {
+		for _, sig := range msg.childSignals {
 			for sigName := range sig.Attributes {
 				if sigAtt, ok := c.SignalAttributes[sigName]; ok {
 					sigAtt.assignSignal(msg.ID, sig)
