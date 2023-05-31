@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "bound_rate": 9600,
+    "boundrate": 9600,
     "node_attributes": {
         "TestString": {
             "string": {}

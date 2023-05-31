@@ -25,7 +25,7 @@ canconv convert --in my_model.dbc --out my_dbc_model.json
 | field              | type                 | description                                                                     |
 | ------------------ | -------------------- | ------------------------------------------------------------------------------- |
 | version            | string               | The version of the CAN model                                                    |
-| bound_rate         | number               | The bound rate of the CAN model                                                 |
+| boundrate          | number               | The bound rate of the CAN model                                                 |
 | nodes              | map[string]Node      | A map containing the nodes as value and the node names as key                   |
 | general_attributes | map[string]Attribute | A map containing the general attributes as value and the attribute names as key |
 | node_attributes    | map[string]Attribute | A map containing the node attributes as value and the attribute names as key    |

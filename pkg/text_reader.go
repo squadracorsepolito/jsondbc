@@ -145,7 +145,7 @@ func (r *textReader) read() (*CanModel, error) {
 			if err != nil {
 				return nil, err
 			}
-			canModel.BoundRate = busSpeed
+			canModel.Boundrate = busSpeed
 			continue
 		}
 		if strings.HasPrefix(line, r.cfg.nodeIdent) {
