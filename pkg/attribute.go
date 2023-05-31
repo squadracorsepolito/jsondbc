@@ -185,15 +185,14 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 		return ""
 	}
 
-	switch att.(type) {
-	case int:
-		return formatInt(att.(int))
+	switch attType {
+	case attributeTypeInt:
+		return formatInt(int(att.(float64)))
 
-	case string:
-		if attType == attributeTypeString {
-			return formatString(att.(string))
-		}
+	case attributeTypeString:
+		return formatString(att.(string))
 
+	case attributeTypeEnum:
 		tmp := att.(string)
 		for idx, val := range enumAtt.Values {
 			if val == tmp {
