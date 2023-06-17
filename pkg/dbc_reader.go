@@ -5,8 +5,8 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/FerroO2000/canconv/pkg/reg"
-	"github.com/FerroO2000/canconv/pkg/sym"
+	"github.com/FerroO2000/jsondbc/pkg/reg"
+	"github.com/FerroO2000/jsondbc/pkg/sym"
 )
 
 type DBCReader struct {

@@ -4,7 +4,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/FerroO2000/canconv/cmd/convert"
+	"github.com/FerroO2000/jsondbc/cmd/convert"
 	"github.com/spf13/cobra"
 )
 

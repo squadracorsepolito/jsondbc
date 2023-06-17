@@ -1,4 +1,4 @@
-module github.com/FerroO2000/canconv
+module github.com/FerroO2000/jsondbc
 
 go 1.20
 

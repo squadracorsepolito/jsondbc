@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/FerroO2000/canconv/pkg/sym"
+	"github.com/FerroO2000/jsondbc/pkg/sym"
 )
 
 const dbcDefNode = "Vector__XXX"

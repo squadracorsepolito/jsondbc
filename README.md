@@ -1,4 +1,4 @@
-# Canconv
+# jsondbc
 
 Simple go cli to convert CAN models in JSON and dbc.
 
@@ -11,13 +11,13 @@ Download the binary in the release section
 Converting from json to dbc:
 
 ```
-canconv convert --in my_model.json --out my_dbc_model.dbc
+jsondbc convert --in my_model.json --out my_dbc_model.dbc
 ```
 
 Converting from dbc to json:
 
 ```
-canconv convert --in my_model.dbc --out my_dbc_model.json
+jsondbc convert --in my_model.dbc --out my_dbc_model.json
 ```
 
 ## CAN Model
