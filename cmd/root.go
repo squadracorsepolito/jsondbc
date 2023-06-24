@@ -9,7 +9,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "canconv",
+	Use:   "jsondbc",
 	Short: "A tool to convert CAN models definded in JSON",
 	Long:  ``,
 }
