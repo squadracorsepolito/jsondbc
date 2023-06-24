@@ -52,7 +52,7 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	f.print(sym.DBCVersion, formatString(canModel.Version))
 	f.print(dbcHeaders)
 
-	w.writeBusSpeed(f, canModel.Boudrate)
+	w.writeBusSpeed(f, canModel.Baudrate)
 	w.writeNodes(f, canModel.Nodes)
 
 	for msgName, msg := range canModel.Messages {
