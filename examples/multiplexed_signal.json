@@ -19,7 +19,15 @@
                     "scale": 1,
                     "max": 15,
                     "mux_group": {
-                        "S1": {
+                        "MultiplexedSignalName": {
+                            "description": "desc S2",
+                            "mux_switch": 2,
+                            "start_bit": 23,
+                            "size": 8,
+                            "scale": 1,
+                            "max": 255
+                        },
+                        "ExtendedMuxSignalName": {
                             "description": "desc S1",
                             "mux_switch": 1,
                             "start_bit": 23,
@@ -46,14 +54,6 @@
                                     "unit": "%"
                                 }
                             }
-                        },
-                        "S2": {
-                            "description": "desc S2",
-                            "mux_switch": 2,
-                            "start_bit": 23,
-                            "size": 8,
-                            "scale": 1,
-                            "max": 255
                         }
                     }
                 }
