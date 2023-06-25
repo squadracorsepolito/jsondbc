@@ -441,9 +441,11 @@ func (r *textReader) readSignal(lineIdx int) (*Signal, error) {
 		return nil, err
 	}
 
+	endianness := "little"
 	bigEndian := false
 	if match[r.sigReg.SubexpIndex("order")] == "0" {
 		bigEndian = true
+		endianness = "big"
 	}
 	signed := false
 	if match[r.sigReg.SubexpIndex("signed")] == "-" {
@@ -480,23 +482,24 @@ func (r *textReader) readSignal(lineIdx int) (*Signal, error) {
 	}
 
 	return &Signal{
-		StartBit:  uint32(startBit),
-		Size:      uint32(size),
-		BigEndian: bigEndian,
-		Signed:    signed,
-		Unit:      unit,
-		Receivers: receivers,
-		Scale:     scale,
-		Offset:    offset,
-		Min:       min,
-		Max:       max,
-		Bitmap:    make(map[string]uint32),
-		MuxGroup:  make(map[string]*Signal),
-		MuxSwitch: muxSwitch,
+		StartBit:   uint32(startBit),
+		Size:       uint32(size),
+		Signed:     signed,
+		Unit:       unit,
+		Endianness: endianness,
+		Receivers:  receivers,
+		Scale:      scale,
+		Offset:     offset,
+		Min:        min,
+		Max:        max,
+		Bitmap:     make(map[string]uint32),
+		MuxGroup:   make(map[string]*Signal),
+		MuxSwitch:  muxSwitch,
 		AttributeAssignments: &AttributeAssignments{
 			Attributes: make(map[string]any),
 		},
 
+		isBigEndian:   bigEndian,
 		signalName:    sigName,
 		isMultiplexor: isMultiplexor,
 		isMultiplexed: isMultiplexed,

@@ -1,5 +1,7 @@
 package pkg
 
+import "fmt"
+
 // Signal represents a CAN signal in a message.
 type Signal struct {
 	*AttributeAssignments
@@ -7,7 +9,7 @@ type Signal struct {
 	MuxSwitch   uint32             `json:"mux_switch,omitempty"`
 	StartBit    uint32             `json:"start_bit"`
 	Size        uint32             `json:"size"`
-	BigEndian   bool               `json:"big_endian,omitempty"`
+	Endianness  string             `json:"endianness"`
 	Signed      bool               `json:"signed,omitempty"`
 	Unit        string             `json:"unit,omitempty"`
 	Receivers   []string           `json:"receivers,omitempty"`
@@ -21,6 +23,7 @@ type Signal struct {
 	signalName    string
 	isMultiplexor bool
 	isMultiplexed bool
+	isBigEndian   bool
 }
 
 func (s *Signal) initSignal(sigName string) {
@@ -30,6 +33,19 @@ func (s *Signal) initSignal(sigName string) {
 		s.AttributeAssignments = &AttributeAssignments{
 			Attributes: make(map[string]any),
 		}
+	}
+
+	if len(s.Endianness) > 0 {
+		switch s.Endianness {
+		case "big":
+			s.isBigEndian = true
+		case "little":
+			s.isBigEndian = false
+		default:
+			s.Endianness = "little"
+		}
+	} else {
+		s.Endianness = "little"
 	}
 
 	if len(s.MuxGroup) > 0 {
@@ -50,4 +66,12 @@ func (s *Signal) IsMultiplexor() bool {
 // HasDescription returns true if the signal has a description.
 func (s *Signal) HasDescription() bool {
 	return len(s.Description) > 0
+}
+
+func (s *Signal) validate() error {
+	if s.Size == 0 {
+		return fmt.Errorf("signal [%s] size cannot be 0", s.signalName)
+	}
+
+	return nil
 }

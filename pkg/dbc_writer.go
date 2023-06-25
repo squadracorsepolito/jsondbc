@@ -121,7 +121,7 @@ func (w *DBCWriter) writeMessage(f *file, msgName string, msg *Message) {
 
 func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
 	byteOrder := 1
-	if sig.BigEndian {
+	if sig.isBigEndian {
 		byteOrder = 0
 	}
 	valueType := "+"
@@ -194,7 +194,7 @@ func (w *DBCWriter) writeExtMuxValue(f *file, msgID, muxSigName, sigName string,
 		}
 	}
 
-	f.print(sym.DBCExtMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch), ";")
+	f.print(sym.DBCExtMuxValue, msgID, sigName, muxSigName, fmt.Sprintf("%d-%d", sig.MuxSwitch, sig.MuxSwitch)+";")
 }
 
 func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
@@ -211,7 +211,7 @@ func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
 					}
 					bitmap += " " + formatUint(val) + " " + formatString(name)
 				}
-				f.print(sym.DBCValue, msg.FormatID(), sigName, bitmap, ";")
+				f.print(sym.DBCValue, msg.FormatID(), sigName, bitmap+";")
 			}
 		}
 	}
@@ -229,14 +229,14 @@ func (w *DBCWriter) writeComments(f *file, m *CanModel) {
 
 func (w *DBCWriter) writeNodeComment(f *file, nodeName string, node *Node) {
 	if node.HasDescription() {
-		f.print(sym.DBCComment, sym.DBCNode, nodeName, formatString(node.Description), ";")
+		f.print(sym.DBCComment, sym.DBCNode, nodeName, formatString(node.Description)+";")
 	}
 }
 
 func (w *DBCWriter) writeMessageComment(f *file, msg *Message) {
 	msgID := msg.FormatID()
 	if msg.HasDescription() {
-		f.print(sym.DBCComment, sym.DBCMessage, msgID, formatString(msg.Description), ";")
+		f.print(sym.DBCComment, sym.DBCMessage, msgID, formatString(msg.Description)+";")
 	}
 
 	for sigName, sig := range msg.Signals {
@@ -246,7 +246,7 @@ func (w *DBCWriter) writeMessageComment(f *file, msg *Message) {
 
 func (w *DBCWriter) writeSignalComment(f *file, msgID, sigName string, sig *Signal) {
 	if sig.HasDescription() {
-		f.print(sym.DBCComment, sym.DBCSignal, msgID, sigName, formatString(sig.Description), ";")
+		f.print(sym.DBCComment, sym.DBCSignal, msgID, sigName, formatString(sig.Description)+";")
 	}
 
 	if sig.IsMultiplexor() {
@@ -284,7 +284,7 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 		}
 	}
 
-	f.print(sym.DBCAttDef, attKindStr, formatString(att.attributeName), strValues, ";")
+	f.print(sym.DBCAttDef, attKindStr, formatString(att.attributeName), strValues+";")
 }
 
 func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
@@ -298,14 +298,14 @@ func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
 		defValue = formatInt(att.Enum.defaultIdx)
 	}
 
-	f.print(sym.DBCAttDefaultVal, formatString(att.attributeName), defValue, ";")
+	f.print(sym.DBCAttDefaultVal, formatString(att.attributeName), defValue+";")
 }
 
 func (w *DBCWriter) writeNodeAttributeAssignments(f *file, attributes []*NodeAttribute) {
 	for _, nodeAtt := range attributes {
 		for _, node := range nodeAtt.assignedNodes {
 			value := node.getAttributeValue(nodeAtt.attributeName, nodeAtt.attributeType, nodeAtt.Enum)
-			f.print(sym.DBCAttAssignment, formatString(nodeAtt.attributeName), sym.DBCNode, node.nodeName, value, ";")
+			f.print(sym.DBCAttAssignment, formatString(nodeAtt.attributeName), sym.DBCNode, node.nodeName, value+";")
 		}
 	}
 }
@@ -314,7 +314,7 @@ func (w *DBCWriter) writeMessageAttributeAssignments(f *file, attributes []*Mess
 	for _, msgAtt := range attributes {
 		for _, msg := range msgAtt.assignedMessages {
 			value := msg.getAttributeValue(msgAtt.attributeName, msgAtt.attributeType, msgAtt.Enum)
-			f.print(sym.DBCAttAssignment, formatString(msgAtt.attributeName), sym.DBCMessage, formatUint(msg.ID), value, ";")
+			f.print(sym.DBCAttAssignment, formatString(msgAtt.attributeName), sym.DBCMessage, formatUint(msg.ID), value+";")
 		}
 	}
 }
@@ -324,7 +324,7 @@ func (w *DBCWriter) writeSignalAttributeAssignments(f *file, attributes []*Signa
 		for msgID, sigMap := range sigAtt.assignedSignals {
 			for _, sig := range sigMap {
 				value := sig.getAttributeValue(sigAtt.attributeName, sigAtt.attributeType, sigAtt.Enum)
-				f.print(sym.DBCAttAssignment, formatString(sigAtt.attributeName), sym.DBCSignal, formatUint(msgID), sig.signalName, value, ";")
+				f.print(sym.DBCAttAssignment, formatString(sigAtt.attributeName), sym.DBCSignal, formatUint(msgID), sig.signalName, value+";")
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -62,4 +63,21 @@ func (m *Message) HasDescription() bool {
 // FormatID returns the message ID as a string.
 func (m *Message) FormatID() string {
 	return strconv.FormatUint(uint64(m.ID), 10)
+}
+
+func (m *Message) validate() error {
+	if m.Length == 0 {
+		return fmt.Errorf("message [%s] length cannot be 0", m.messageName)
+	}
+	if len(m.childSignals) == 0 {
+		return fmt.Errorf("message [%s] has no signals", m.messageName)
+	}
+
+	for _, sig := range m.childSignals {
+		if err := sig.validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
