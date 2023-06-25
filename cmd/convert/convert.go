@@ -82,6 +82,8 @@ func convert() error {
 		return err
 	}
 
+	log.Print("CONVERTION COMPLETED")
+
 	return nil
 }
 

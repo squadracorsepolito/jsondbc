@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -72,6 +73,20 @@ func (c *CanModel) Init() {
 
 // Validate validates the CAN model.
 func (c *CanModel) Validate() error {
+	msgIDMap := make(map[uint32]string)
+	for _, msg := range c.Messages {
+		if msgName, ok := msgIDMap[msg.ID]; ok {
+			return fmt.Errorf("[%s] message id [%d] is already taken by [%s]", msg.messageName, msg.ID, msgName)
+		}
+		msgIDMap[msg.ID] = msg.messageName
+	}
+
+	for _, msg := range c.Messages {
+		if err := msg.validate(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
