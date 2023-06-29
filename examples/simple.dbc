@@ -29,17 +29,31 @@ NS_ :
 	BU_EV_REL_
 	BU_BO_REL_
 
-BS_ : 9600
+BS_ :
 
 BU_ : Node1 Node2
 
 BO_ 2364540158 EEC1: 8 Vector__XXX
-	SG_ Engine_Speed : 24|16@0+ (0.125,0) [0|8031.875] "rpm" Node1,Node2
-	SG_ Engine_Status : 0|2@0+ (1,0) [0|2] "status" Vector__XXX
+	SG_ Engine_Status : 0|2@1+ (0,0) [0|2] "status" Vector__XXX
+	SG_ Engine_Speed : 24|16@1+ (0.125,0) [0|8031.875] "rpm" Node1,Node2
 
-VAL_ 2364540158 Engine_Status 0 "Off" 1 "Idle" 2 "Running" ;
-CM_ BU_ Node1 "Node1 desc" ;
-CM_ BU_ Node2 "Node2 desc" ;
-CM_ BO_ 2364540158 "desc 0" ;
-CM_ SG_ 2364540158 Engine_Speed "desc 1" ;
-CM_ SG_ 2364540158 Engine_Status "desc 2" ;
+VAL_ 2364540158 Engine_Status 0 "Off" 1 "Idle" 2 "Running";
+
+
+CM_ BU_ Node1 "Node1 desc";
+CM_ BU_ Node2 "Node2 desc";
+CM_ BO_ 2364540158 "desc 0 (frequency: 100 Hz)";
+CM_ SG_ 2364540158 Engine_Speed "desc 1";
+CM_ SG_ 2364540158 Engine_Status "desc 2";
+
+BA_DEF_ BU_ "TestString" STRING "";
+BA_DEF_ BO_ "MsgFrequency" INT 0 65535;
+BA_DEF_ BO_ "VFrameFormat" ENUM "StandardCAN","ExtendedCAN","reserved","J1939PG";
+BA_DEF_ SG_ "SPN" INT 0 524287;
+BA_DEF_DEF_ "TestString" "";
+BA_DEF_DEF_ "VFrameFormat" 3;
+BA_DEF_DEF_ "MsgFrequency" 0;
+BA_DEF_DEF_ "SPN" 0;
+BA_ "VFrameFormat" BO_ 2364540158 0;
+BA_ "MsgFrequency" BO_ 2364540158 100;
+BA_ "SPN" SG_ 2364540158 Engine_Speed 190;

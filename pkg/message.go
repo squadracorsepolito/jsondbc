@@ -3,6 +3,8 @@ package pkg
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/FerroO2000/jsondbc/pkg/sym"
 )
 
 // Message represents a CAN message.
@@ -10,12 +12,14 @@ type Message struct {
 	*AttributeAssignments
 	ID          uint32             `json:"id"`
 	Description string             `json:"description,omitempty"`
+	Frequency   uint32             `json:"frequency,omitempty"`
 	Length      uint32             `json:"length"`
 	Sender      string             `json:"sender,omitempty"`
 	Signals     map[string]*Signal `json:"signals"`
 
 	messageName  string
 	childSignals map[string]*Signal
+	fromDBC      bool
 }
 
 func (m *Message) initSignalRec(sigName string, sig *Signal) {
@@ -37,6 +41,21 @@ func (m *Message) initMessage(msgName string) {
 		m.AttributeAssignments = &AttributeAssignments{
 			Attributes: make(map[string]any),
 		}
+	}
+
+	if !m.fromDBC && m.Frequency > 0 {
+		m.AttributeAssignments.Attributes[sym.MsgFrequencyAttribute] = m.Frequency
+		freqStr := fmt.Sprintf("(frequency: %d Hz)", m.Frequency)
+		if m.HasDescription() {
+			m.Description += " " + freqStr
+		} else {
+			m.Description = freqStr
+		}
+	}
+	freqAtt, hasFreqAtt := m.AttributeAssignments.Attributes[sym.MsgFrequencyAttribute]
+	if m.fromDBC && hasFreqAtt {
+		m.Frequency = uint32(freqAtt.(int))
+		delete(m.AttributeAssignments.Attributes, sym.MsgFrequencyAttribute)
 	}
 
 	m.childSignals = make(map[string]*Signal)

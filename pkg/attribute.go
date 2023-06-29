@@ -1,5 +1,7 @@
 package pkg
 
+import "github.com/FerroO2000/jsondbc/pkg/sym"
+
 type attributeKind uint8
 
 const (
@@ -187,6 +189,9 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 
 	switch attType {
 	case attributeTypeInt:
+		if attName == sym.MsgFrequencyAttribute {
+			return formatInt(int(att.(uint32)))
+		}
 		return formatInt(int(att.(float64)))
 
 	case attributeTypeString:

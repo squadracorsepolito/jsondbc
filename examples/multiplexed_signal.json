@@ -1,5 +1,13 @@
 {
     "version": "1.0",
+    "signal_attributes": {
+        "SPN": {
+            "int": {
+                "from": 0,
+                "to": 524287
+            }
+        }
+    },
     "nodes": {
         "Node1": {
             "description": "Node1 desc"
@@ -36,6 +44,9 @@
                             "max": 255,
                             "mux_group": {
                                 "VehicleSpeed": {
+                                    "attributes": {
+                                        "SPN": 190
+                                    },
                                     "description": "desc VehicleSpeed",
                                     "mux_switch": 13,
                                     "start_bit": 31,

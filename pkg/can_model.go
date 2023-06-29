@@ -3,6 +3,8 @@ package pkg
 import (
 	"fmt"
 	"os"
+
+	"github.com/FerroO2000/jsondbc/pkg/sym"
 )
 
 type Reader interface {
@@ -32,9 +34,28 @@ func (c *CanModel) Init() {
 	for attName, att := range c.NodeAttributes {
 		att.initNodeAttribute(attName)
 	}
+
+	_, hasFreqAtt := c.MessageAttributes[sym.MsgFrequencyAttribute]
+	if hasFreqAtt {
+		delete(c.MessageAttributes, sym.MsgFrequencyAttribute)
+	} else {
+		if c.MessageAttributes == nil {
+			c.MessageAttributes = make(map[string]*MessageAttribute)
+		}
+		c.MessageAttributes[sym.MsgFrequencyAttribute] = &MessageAttribute{
+			Attribute: &Attribute{
+				Int: &AttributeInt{
+					Default: 0,
+					From:    0,
+					To:      65535,
+				},
+			},
+		}
+	}
 	for attName, att := range c.MessageAttributes {
 		att.initMessageAttribute(attName)
 	}
+
 	for attName, att := range c.SignalAttributes {
 		att.initSignalAttribute(attName)
 	}

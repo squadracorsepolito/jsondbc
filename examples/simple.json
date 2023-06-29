@@ -1,6 +1,5 @@
 {
     "version": "1.0",
-    "boundrate": 9600,
     "node_attributes": {
         "TestString": {
             "string": {}
@@ -41,8 +40,9 @@
     "messages": {
         "EEC1": {
             "id": 2364540158,
+            "frequency": 100,
             "description": "desc 0",
-            "enum_attributes": {
+            "attributes": {
                 "VFrameFormat": "StandardCAN"
             },
             "length": 8,
@@ -50,7 +50,7 @@
             "signals": {
                 "Engine_Speed": {
                     "description": "desc 1",
-                    "int_attributes": {
+                    "attributes": {
                         "SPN": 190
                     },
                     "start_bit": 24,

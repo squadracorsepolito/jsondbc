@@ -338,6 +338,7 @@ func (r *textReader) readMessage(lineIdx int) (*Message, error) {
 		},
 
 		messageName: name,
+		fromDBC:     true,
 	}
 
 	splMuxSigs := make(map[string]*Signal)
@@ -1002,6 +1003,15 @@ func (r *textReader) handleAttributeAssignments(lineIdxs []int) error {
 				if msg.ID != msgAss.msgID {
 					continue
 				}
+
+				/*if msgAss.attName == sym.MsgFrequencyAttribute {
+					val, err := r.getAttributeValue(attributeTypeInt, msgAss.attData, []string{})
+					if err != nil {
+						return r.getError(lineIdx, err.Error())
+					}
+					msg.Frequency = uint32(val.(int))
+					break
+				}*/
 
 				if att, ok := r.canModel.MessageAttributes[msgAss.attName]; ok {
 					enumValues := []string{}
