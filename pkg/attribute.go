@@ -1,6 +1,6 @@
 package pkg
 
-import "github.com/FerroO2000/jsondbc/pkg/sym"
+import "github.com/squadracorsepolito/jsondbc/pkg/sym"
 
 type attributeKind uint8
 

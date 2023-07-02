@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/FerroO2000/jsondbc/pkg/sym"
+	"github.com/squadracorsepolito/jsondbc/pkg/sym"
 )
 
 type Reader interface {

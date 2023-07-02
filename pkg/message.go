@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/FerroO2000/jsondbc/pkg/sym"
+	"github.com/squadracorsepolito/jsondbc/pkg/sym"
 )
 
 // Message represents a CAN message.

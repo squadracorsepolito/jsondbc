@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/FerroO2000/jsondbc/pkg"
 	"github.com/spf13/cobra"
+	"github.com/squadracorsepolito/jsondbc/pkg"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/FerroO2000/jsondbc
+module github.com/squadracorsepolito/jsondbc
 
 go 1.20
 

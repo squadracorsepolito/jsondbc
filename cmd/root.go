@@ -4,8 +4,8 @@ package cmd
 import (
 	"os"
 
-	"github.com/FerroO2000/jsondbc/cmd/convert"
 	"github.com/spf13/cobra"
+	"github.com/squadracorsepolito/jsondbc/cmd/convert"
 )
 
 var rootCmd = &cobra.Command{
