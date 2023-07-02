@@ -189,7 +189,7 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 
 	switch attType {
 	case attributeTypeInt:
-		if attName == sym.MsgFrequencyAttribute {
+		if attName == sym.MsgPeriodAttribute {
 			return formatInt(int(att.(uint32)))
 		}
 		return formatInt(int(att.(float64)))

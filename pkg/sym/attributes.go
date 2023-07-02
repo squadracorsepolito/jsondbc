@@ -1,5 +1,5 @@
 package sym
 
 const (
-	MsgFrequencyAttribute string = "MsgFrequency"
+	MsgPeriodAttribute string = "MsgPeriodMS"
 )

@@ -12,7 +12,7 @@ type Message struct {
 	*AttributeAssignments
 	ID          uint32             `json:"id"`
 	Description string             `json:"description,omitempty"`
-	Frequency   uint32             `json:"frequency,omitempty"`
+	Period      uint32             `json:"period_ms,omitempty"`
 	Length      uint32             `json:"length"`
 	Sender      string             `json:"sender,omitempty"`
 	Signals     map[string]*Signal `json:"signals"`
@@ -43,19 +43,19 @@ func (m *Message) initMessage(msgName string) {
 		}
 	}
 
-	if !m.fromDBC && m.Frequency > 0 {
-		m.AttributeAssignments.Attributes[sym.MsgFrequencyAttribute] = m.Frequency
-		freqStr := fmt.Sprintf("(frequency: %d Hz)", m.Frequency)
+	if !m.fromDBC && m.Period > 0 {
+		m.AttributeAssignments.Attributes[sym.MsgPeriodAttribute] = m.Period
+		perStr := fmt.Sprintf("(period: %d ms)", m.Period)
 		if m.HasDescription() {
-			m.Description += " " + freqStr
+			m.Description += " " + perStr
 		} else {
-			m.Description = freqStr
+			m.Description = perStr
 		}
 	}
-	freqAtt, hasFreqAtt := m.AttributeAssignments.Attributes[sym.MsgFrequencyAttribute]
+	freqAtt, hasFreqAtt := m.AttributeAssignments.Attributes[sym.MsgPeriodAttribute]
 	if m.fromDBC && hasFreqAtt {
-		m.Frequency = uint32(freqAtt.(int))
-		delete(m.AttributeAssignments.Attributes, sym.MsgFrequencyAttribute)
+		m.Period = uint32(freqAtt.(int))
+		delete(m.AttributeAssignments.Attributes, sym.MsgPeriodAttribute)
 	}
 
 	m.childSignals = make(map[string]*Signal)

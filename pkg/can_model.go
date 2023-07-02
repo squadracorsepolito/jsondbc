@@ -35,14 +35,14 @@ func (c *CanModel) Init() {
 		att.initNodeAttribute(attName)
 	}
 
-	_, hasFreqAtt := c.MessageAttributes[sym.MsgFrequencyAttribute]
+	_, hasFreqAtt := c.MessageAttributes[sym.MsgPeriodAttribute]
 	if hasFreqAtt {
-		delete(c.MessageAttributes, sym.MsgFrequencyAttribute)
+		delete(c.MessageAttributes, sym.MsgPeriodAttribute)
 	} else {
 		if c.MessageAttributes == nil {
 			c.MessageAttributes = make(map[string]*MessageAttribute)
 		}
-		c.MessageAttributes[sym.MsgFrequencyAttribute] = &MessageAttribute{
+		c.MessageAttributes[sym.MsgPeriodAttribute] = &MessageAttribute{
 			Attribute: &Attribute{
 				Int: &AttributeInt{
 					Default: 0,

@@ -17,7 +17,7 @@ type Signal struct {
 	Offset      float64            `json:"offset"`
 	Min         float64            `json:"min"`
 	Max         float64            `json:"max"`
-	Bitmap      map[string]uint32  `json:"bitmap,omitempty"`
+	Bitmap      map[string]uint32  `json:"enum,omitempty"`
 	MuxGroup    map[string]*Signal `json:"mux_group,omitempty"`
 
 	signalName    string

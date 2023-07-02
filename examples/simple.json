@@ -32,7 +32,7 @@
         },
         "Node2": {
             "description": "Node2 desc",
-            "string_attributes": {
+            "attributes": {
                 "TestString": "test"
             }
         }
@@ -40,7 +40,7 @@
     "messages": {
         "EEC1": {
             "id": 2364540158,
-            "frequency": 100,
+            "period_ms": 100,
             "description": "desc 0",
             "attributes": {
                 "VFrameFormat": "StandardCAN"
@@ -55,7 +55,7 @@
                     },
                     "start_bit": 24,
                     "size": 16,
-                    "big_endian": false,
+                    "endianness": "big",
                     "signed": false,
                     "unit": "rpm",
                     "receivers": [
@@ -71,11 +71,11 @@
                     "description": "desc 2",
                     "start_bit": 0,
                     "size": 2,
-                    "big_endian": false,
+                    "endianness": "little",
                     "signed": false,
                     "unit": "status",
                     "receivers": [],
-                    "bitmap": {
+                    "enum": {
                         "Off": 0,
                         "Idle": 1,
                         "Running": 2

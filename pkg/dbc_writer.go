@@ -10,7 +10,7 @@ import (
 const dbcDefNode = "Vector__XXX"
 
 const dbcHeaders = `
-NS_ :
+NS_ : 
 	NS_DESC_
 	CM_
 	BA_DEF_
@@ -38,6 +38,7 @@ NS_ :
 	BU_SG_REL_
 	BU_EV_REL_
 	BU_BO_REL_
+	SG_MUL_VAL_
 `
 
 type DBCWriter struct{}
@@ -272,7 +273,7 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 	case attributeTypeInt:
 		strValues = fmt.Sprintf("INT %d %d", att.Int.From, att.Int.To)
 	case attributeTypeString:
-		strValues = `STRING ""`
+		strValues = `STRING `
 	case attributeTypeEnum:
 		strValues = "ENUM "
 		for i, val := range att.Enum.Values {
