@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/squadracorsepolito/jsondbc/pkg/sym"
@@ -25,6 +26,7 @@ type Message struct {
 func (m *Message) initSignalRec(sigName string, sig *Signal) {
 	sig.initSignal(sigName)
 	m.childSignals[sigName] = sig
+	sig.isMultiplexed = true
 	if !sig.isMultiplexor {
 		return
 	}
@@ -99,4 +101,30 @@ func (m *Message) validate() error {
 	}
 
 	return nil
+}
+
+func (m *Message) getSignals() []*Signal {
+	signals := make([]*Signal, len(m.childSignals))
+
+	idx := 0
+	needMuxSort := false
+	for _, sig := range m.childSignals {
+		if !needMuxSort && sig.isMultiplexed {
+			needMuxSort = true
+		}
+		signals[idx] = sig
+		idx++
+	}
+
+	sort.SliceStable(signals, func(i, j int) bool {
+		return signals[i].StartBit < signals[j].StartBit
+	})
+
+	if needMuxSort {
+		sort.SliceStable(signals, func(i, j int) bool {
+			return signals[i].MuxSwitch < signals[j].MuxSwitch
+		})
+	}
+
+	return signals
 }

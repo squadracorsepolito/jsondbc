@@ -56,8 +56,8 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	w.writeBusSpeed(f, canModel.Baudrate)
 	w.writeNodes(f, canModel.Nodes)
 
-	for msgName, msg := range canModel.Messages {
-		w.writeMessage(f, msgName, msg)
+	for _, msg := range canModel.getMessages() {
+		w.writeMessage(f, msg)
 	}
 
 	w.writeBitmaps(f, canModel)
@@ -104,23 +104,23 @@ func (w *DBCWriter) writeNodes(f *file, nodes map[string]*Node) {
 	f.print()
 }
 
-func (w *DBCWriter) writeMessage(f *file, msgName string, msg *Message) {
+func (w *DBCWriter) writeMessage(f *file, msg *Message) {
 	id := fmt.Sprintf("%d", msg.ID)
 	length := fmt.Sprintf("%d", msg.Length)
 	sender := msg.Sender
 	if sender == "" {
 		sender = dbcDefNode
 	}
-	f.print(sym.DBCMessage, id, msgName+":", length, sender)
+	f.print(sym.DBCMessage, id, msg.messageName+":", length, sender)
 
-	for sigName, sig := range msg.Signals {
-		w.writeSignal(f, sigName, sig, false)
+	for _, sig := range msg.getSignals() {
+		w.writeSignal(f, sig)
 	}
 
 	f.print()
 }
 
-func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexed bool) {
+func (w *DBCWriter) writeSignal(f *file, sig *Signal) {
 	byteOrder := 1
 	if sig.isBigEndian {
 		byteOrder = 0
@@ -148,18 +148,14 @@ func (w *DBCWriter) writeSignal(f *file, sigName string, sig *Signal, multiplexe
 	}
 
 	muxStr := ""
-	if multiplexed {
+	if sig.isMultiplexed {
 		muxStr = "m" + formatUint(sig.MuxSwitch)
 	}
 	if sig.IsMultiplexor() {
 		muxStr += "M"
-
-		for muxSigName, muxSig := range sig.MuxGroup {
-			w.writeSignal(f, muxSigName, muxSig, true)
-		}
 	}
 
-	f.print("\t", sym.DBCSignal, sigName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
+	f.print("\t", sym.DBCSignal, sig.signalName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
 func (w *DBCWriter) writeMuxGroup(f *file, messages map[string]*Message) {

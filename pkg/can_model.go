@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/squadracorsepolito/jsondbc/pkg/sym"
 )
@@ -152,4 +153,20 @@ func (c *CanModel) getSignalAttributes() []*SignalAttribute {
 		attributes = append(attributes, att)
 	}
 	return attributes
+}
+
+func (c *CanModel) getMessages() []*Message {
+	messages := make([]*Message, len(c.Messages))
+
+	idx := 0
+	for _, msg := range c.Messages {
+		messages[idx] = msg
+		idx++
+	}
+
+	sort.Slice(messages, func(i, j int) bool {
+		return messages[i].ID < messages[j].ID
+	})
+
+	return messages
 }
