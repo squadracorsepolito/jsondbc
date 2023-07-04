@@ -269,7 +269,9 @@ func (w *DBCWriter) writeAttributeDefinition(f *file, att *Attribute) {
 	case attributeTypeInt:
 		strValues = fmt.Sprintf("INT %d %d", att.Int.From, att.Int.To)
 	case attributeTypeString:
-		strValues = `STRING `
+		strValues = "STRING "
+	case attributeTypeFloat:
+		strValues = fmt.Sprintf("FLOAT %s %s", formatFloat(att.Float.From), formatFloat(att.Float.To))
 	case attributeTypeEnum:
 		strValues = "ENUM "
 		for i, val := range att.Enum.Values {
@@ -291,6 +293,8 @@ func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
 		defValue = formatInt(att.Int.Default)
 	case attributeTypeString:
 		defValue = formatString(att.String.Default)
+	case attributeTypeFloat:
+		defValue = formatFloat(att.Float.Default)
 	case attributeTypeEnum:
 		defValue = formatInt(att.Enum.defaultIdx)
 	}

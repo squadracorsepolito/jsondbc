@@ -1,5 +1,14 @@
 {
     "version": "1.0",
+    "general_attributes": {
+        "FloatAtt": {
+            "float": {
+                "default": 1.5,
+                "from": 0.0,
+                "to": 25.75
+            }
+        }
+    },
     "node_attributes": {
         "TestString": {
             "string": {}
@@ -23,6 +32,13 @@
             "int": {
                 "from": 0,
                 "to": 524287
+            }
+        },
+        "TestFloatAtt": {
+            "float": {
+                "default": 1.5,
+                "from": 0.0,
+                "to": 25.75
             }
         }
     },
@@ -51,7 +67,8 @@
                 "Engine_Speed": {
                     "description": "desc 1",
                     "attributes": {
-                        "SPN": 190
+                        "SPN": 190,
+                        "TestFloatAtt": 10.5
                     },
                     "start_bit": 24,
                     "size": 16,

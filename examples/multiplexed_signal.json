@@ -6,6 +6,13 @@
                 "from": 0,
                 "to": 524287
             }
+        },
+        "TestFloatAtt": {
+            "float": {
+                "default": 1.5,
+                "from": 0,
+                "to": 25.75
+            }
         }
     },
     "nodes": {
@@ -45,7 +52,8 @@
                             "mux_group": {
                                 "VehicleSpeed": {
                                     "attributes": {
-                                        "SPN": 190
+                                        "SPN": 190,
+                                        "TestFloatAtt": 10.5
                                     },
                                     "description": "desc VehicleSpeed",
                                     "mux_switch": 13,

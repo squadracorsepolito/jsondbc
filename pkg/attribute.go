@@ -17,12 +17,14 @@ const (
 	attributeTypeInt attributeType = iota
 	attributeTypeString
 	attributeTypeEnum
+	attributeTypeFloat
 )
 
 type Attribute struct {
 	Int    *AttributeInt    `json:"int,omitempty"`
 	String *AttributeString `json:"string,omitempty"`
 	Enum   *AttributeEnum   `json:"enum,omitempty"`
+	Float  *AttributeFloat  `json:"float,omitempty"`
 
 	attributeName string
 	attributeKind attributeKind
@@ -47,12 +49,23 @@ func (a *Attribute) initAttribute(attName string) {
 		a.Enum.initAttributeEnum()
 		return
 	}
+
+	if a.Float != nil {
+		a.attributeType = attributeTypeFloat
+		return
+	}
 }
 
 type AttributeInt struct {
 	Default int `json:"default"`
 	From    int `json:"from"`
 	To      int `json:"to"`
+}
+
+type AttributeFloat struct {
+	Default float64 `json:"default"`
+	From    float64 `json:"from"`
+	To      float64 `json:"to"`
 }
 
 type AttributeString struct {
@@ -196,6 +209,9 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 
 	case attributeTypeString:
 		return formatString(att.(string))
+
+	case attributeTypeFloat:
+		return formatFloat(att.(float64))
 
 	case attributeTypeEnum:
 		tmp := att.(string)

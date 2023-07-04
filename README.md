@@ -39,6 +39,7 @@ jsondbc convert --in my_model.dbc --out my_dbc_model.json
 | ------ | --------------- | ----------------------------- |
 | int    | AttributeInt    | Set's the attribute as int    |
 | string | AttributeString | Set's the attribute as string |
+| float  | AttributeFloat  | Set's the attribute as float  |
 | enum   | AttributeEnum   | Set's the attribute as enum   |
 
 ### AttributeInt
@@ -54,6 +55,14 @@ jsondbc convert --in my_model.dbc --out my_dbc_model.json
 | field   | type   | description                   |
 | ------- | ------ | ----------------------------- |
 | default | string | The attribute's default value |
+
+### AttributeFloat
+
+| field   | type   | description                        |
+| ------- | ------ | ---------------------------------- |
+| default | number | The attribute's default value      |
+| from    | number | The attribute's lower bound value  |
+| to      | number | The attribute's uppuer bound value |
 
 ### AttributeEnum
 

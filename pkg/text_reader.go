@@ -797,6 +797,14 @@ func (r *textReader) readAttribute(lineIdx int) (*Attribute, error) {
 		att.attributeType = attributeTypeString
 		att.String = &AttributeString{}
 
+	case "FLOAT":
+		att.attributeType = attributeTypeFloat
+		att.Float = &AttributeFloat{}
+		_, err := fmt.Sscanf(attData, "%f %f", &att.Float.From, &att.Float.To)
+		if err != nil {
+			return nil, err
+		}
+
 	case "ENUM":
 		att.attributeType = attributeTypeEnum
 		att.Enum = &AttributeEnum{}
@@ -828,6 +836,13 @@ func (r *textReader) handleAttributeDefaults(lineIdxs []int) error {
 			case attributeTypeString:
 				att.String.Default = strings.Replace(attDef.attData, `"`, "", 2)
 
+			case attributeTypeFloat:
+				val, err := parseFloat(attDef.attData)
+				if err != nil {
+					return r.getError(lineIdx, err.Error())
+				}
+				att.Float.Default = val
+
 			case attributeTypeEnum:
 				strVal := strings.Replace(attDef.attData, `"`, "", 2)
 				idx := 0
@@ -853,6 +868,13 @@ func (r *textReader) handleAttributeDefaults(lineIdxs []int) error {
 
 			case attributeTypeString:
 				att.String.Default = strings.Replace(attDef.attData, `"`, "", 2)
+
+			case attributeTypeFloat:
+				val, err := parseFloat(attDef.attData)
+				if err != nil {
+					return r.getError(lineIdx, err.Error())
+				}
+				att.Float.Default = val
 
 			case attributeTypeEnum:
 				strVal := strings.Replace(attDef.attData, `"`, "", 2)
@@ -881,6 +903,13 @@ func (r *textReader) handleAttributeDefaults(lineIdxs []int) error {
 			case attributeTypeString:
 				att.String.Default = strings.Replace(attDef.attData, `"`, "", 2)
 
+			case attributeTypeFloat:
+				val, err := parseFloat(attDef.attData)
+				if err != nil {
+					return r.getError(lineIdx, err.Error())
+				}
+				att.Float.Default = val
+
 			case attributeTypeEnum:
 				strVal := strings.Replace(attDef.attData, `"`, "", 2)
 				idx := 0
@@ -907,6 +936,13 @@ func (r *textReader) handleAttributeDefaults(lineIdxs []int) error {
 
 			case attributeTypeString:
 				att.String.Default = strings.Replace(attDef.attData, `"`, "", 2)
+
+			case attributeTypeFloat:
+				val, err := parseFloat(attDef.attData)
+				if err != nil {
+					return r.getError(lineIdx, err.Error())
+				}
+				att.Float.Default = val
 
 			case attributeTypeEnum:
 				strVal := strings.Replace(attDef.attData, `"`, "", 2)
@@ -956,6 +992,13 @@ func (r *textReader) getAttributeValue(attType attributeType, attData string, en
 	case attributeTypeString:
 		return strings.Replace(data, `"`, "", 2), nil
 
+	case attributeTypeFloat:
+		val, err := parseFloat(data)
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+
 	case attributeTypeEnum:
 		idx, err := parseInt(data)
 		if err != nil {
@@ -1004,15 +1047,6 @@ func (r *textReader) handleAttributeAssignments(lineIdxs []int) error {
 					continue
 				}
 
-				/*if msgAss.attName == sym.MsgFrequencyAttribute {
-					val, err := r.getAttributeValue(attributeTypeInt, msgAss.attData, []string{})
-					if err != nil {
-						return r.getError(lineIdx, err.Error())
-					}
-					msg.Frequency = uint32(val.(int))
-					break
-				}*/
-
 				if att, ok := r.canModel.MessageAttributes[msgAss.attName]; ok {
 					enumValues := []string{}
 					if att.attributeType == attributeTypeEnum {
@@ -1050,8 +1084,6 @@ func (r *textReader) handleAttributeAssignments(lineIdxs []int) error {
 					}
 				}
 			}
-
-			break
 		}
 	}
 
