@@ -60,12 +60,6 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 		w.writeMessage(f, msg)
 	}
 
-	w.writeBitmaps(f, canModel)
-	f.newLine()
-
-	w.writeMuxGroup(f, canModel.Messages)
-	f.newLine()
-
 	w.writeComments(f, canModel)
 	f.newLine()
 
@@ -79,6 +73,11 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	w.writeNodeAttributeAssignments(f, canModel.getNodeAttributes())
 	w.writeMessageAttributeAssignments(f, canModel.getMessageAttributes())
 	w.writeSignalAttributeAssignments(f, canModel.getSignalAttributes())
+
+	f.newLine()
+	w.writeBitmaps(f, canModel)
+
+	w.writeMuxGroup(f, canModel.Messages)
 
 	return nil
 }
@@ -296,7 +295,7 @@ func (w *DBCWriter) writeAttributeDefaultValue(f *file, att *Attribute) {
 	case attributeTypeFloat:
 		defValue = formatFloat(att.Float.Default)
 	case attributeTypeEnum:
-		defValue = formatInt(att.Enum.defaultIdx)
+		defValue = formatString(att.Enum.Default)
 	}
 
 	f.print(sym.DBCAttDefaultVal, formatString(att.attributeName), defValue+";")

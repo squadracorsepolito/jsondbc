@@ -1,6 +1,6 @@
 VERSION "1.0"
 
-NS_ :
+NS_ : 
 	NS_DESC_
 	CM_
 	BA_DEF_
@@ -28,29 +28,37 @@ NS_ :
 	BU_SG_REL_
 	BU_EV_REL_
 	BU_BO_REL_
+	SG_MUL_VAL_
 
 BS_ :
 
 BU_ : Node1
 
 BO_ 2024 OBD2: 8 Node1
+	SG_ Service M : 11|4@1+ (1,0) [0|15] "" Vector__XXX
+	SG_ ExtendedMuxSignalName m1M : 23|8@1+ (1,0) [0|255] "" Vector__XXX
 	SG_ MultiplexedSignalName m2 : 23|8@1+ (1,0) [0|255] "" Vector__XXX
 	SG_ VehicleSpeed m13 : 31|8@1+ (1,0) [0|255] "km/h" Vector__XXX
 	SG_ ThrottlePosition m17 : 31|8@1+ (0.39216,0) [0|100] "%" Vector__XXX
-	SG_ ExtendedMuxSignalName m1M : 23|8@1+ (1,0) [0|255] "" Vector__XXX
-	SG_ Service M : 11|4@1+ (1,0) [0|15] "" Vector__XXX
-
-
-SG_MUL_VAL_ 2024 MultiplexedSignalName Service 2-2;
-SG_MUL_VAL_ 2024 VehicleSpeed ExtendedMuxSignalName 13-13;
-SG_MUL_VAL_ 2024 ThrottlePosition ExtendedMuxSignalName 17-17;
-SG_MUL_VAL_ 2024 ExtendedMuxSignalName Service 1-1;
 
 CM_ BU_ Node1 "Node1 desc";
 CM_ BO_ 2024 "desc OBD2";
 CM_ SG_ 2024 Service "desc Service";
 CM_ SG_ 2024 MultiplexedSignalName "desc S2";
 CM_ SG_ 2024 ExtendedMuxSignalName "desc S1";
-CM_ SG_ 2024 VehicleSpeed "desc VehicleSpeed";
 CM_ SG_ 2024 ThrottlePosition "desc ThrottlePosition";
+CM_ SG_ 2024 VehicleSpeed "desc VehicleSpeed";
 
+BA_DEF_ BO_ "MsgPeriodMS" INT 0 65535;
+BA_DEF_ SG_ "TestFloatAtt" FLOAT 0 25.75;
+BA_DEF_ SG_ "SPN" INT 0 524287;
+BA_DEF_DEF_ "MsgPeriodMS" 0;
+BA_DEF_DEF_ "SPN" 0;
+BA_DEF_DEF_ "TestFloatAtt" 1.5;
+BA_ "TestFloatAtt" SG_ 2024 VehicleSpeed 10.5;
+BA_ "SPN" SG_ 2024 VehicleSpeed 190;
+
+SG_MUL_VAL_ 2024 MultiplexedSignalName Service 2-2;
+SG_MUL_VAL_ 2024 VehicleSpeed ExtendedMuxSignalName 13-13;
+SG_MUL_VAL_ 2024 ThrottlePosition ExtendedMuxSignalName 17-17;
+SG_MUL_VAL_ 2024 ExtendedMuxSignalName Service 1-1;
