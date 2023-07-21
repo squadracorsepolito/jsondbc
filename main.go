@@ -1,8 +1,11 @@
 // Package main
 package main
 
-import "github.com/squadracorsepolito/jsondbc/cmd"
+import (
+	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
+)
 
 func main() {
-	cmd.Execute()
+	//cmd.Execute()
+	dbc.Test()
 }
