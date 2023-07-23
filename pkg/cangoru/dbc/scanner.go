@@ -20,18 +20,7 @@ const (
 	tokenNumberRange
 	tokenString
 	tokenKeyword
-
-	tokenColon
-	tokenComma
-	tokenPipe
-	tokenLeftParen
-	tokenRightParen
-	tokenLeftSquareBrace
-	tokenRightSquareBrace
-	tokenAt
-	tokenPlus
-	tokenMinus
-	tokenSemicolon
+	tokenSyntax
 )
 
 var tokenNames = map[tokenKind]string{
@@ -44,18 +33,7 @@ var tokenNames = map[tokenKind]string{
 	tokenNumberRange: "number_range",
 	tokenString:      "string",
 	tokenKeyword:     "keyword",
-
-	tokenColon:            "colon",
-	tokenComma:            "comma",
-	tokenPipe:             "pipe",
-	tokenLeftParen:        `left_paren`,
-	tokenRightParen:       `right_paren`,
-	tokenLeftSquareBrace:  `left_square_brace`,
-	tokenRightSquareBrace: `right_square_brace`,
-	tokenAt:               `at`,
-	tokenPlus:             `plus`,
-	tokenMinus:            `minus`,
-	tokenSemicolon:        `semicolon`,
+	tokenSyntax:      "syntax",
 }
 
 const eof = rune(0)
@@ -209,32 +187,8 @@ func (s *scanner) scan() token {
 	case ch == '"':
 		return s.scanString()
 
-	case ch == ':':
-		return s.emitToken(tokenColon)
-
-	case ch == ',':
-		return s.emitToken(tokenComma)
-
-	case ch == '|':
-		return s.emitToken(tokenPipe)
-
-	case ch == '(':
-		return s.emitToken(tokenLeftParen)
-
-	case ch == ')':
-		return s.emitToken(tokenRightParen)
-
-	case ch == '[':
-		return s.emitToken(tokenLeftSquareBrace)
-
-	case ch == ']':
-		return s.emitToken(tokenRightSquareBrace)
-
-	case ch == '@':
-		return s.emitToken(tokenAt)
-
-	case ch == ';':
-		return s.emitToken(tokenSemicolon)
+	case isSyntaxKeyword(ch):
+		return s.emitToken(tokenSyntax)
 	}
 
 	return s.emitErrorToken("unrecognized symbol")
@@ -291,12 +245,8 @@ loop:
 	}
 
 	if !hasMore {
-		switch firstCh {
-		case '+':
-			return s.emitToken(tokenPlus)
-
-		case '-':
-			return s.emitToken(tokenMinus)
+		if firstCh == '-' || firstCh == '+' {
+			return s.emitToken(tokenSyntax)
 		}
 	}
 
