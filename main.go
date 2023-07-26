@@ -2,10 +2,12 @@
 package main
 
 import (
-	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
+	"github.com/squadracorsepolito/jsondbc/pkg/cangoru"
 )
 
 func main() {
 	//cmd.Execute()
-	dbc.Test()
+	if err := cangoru.ReadFromDBC("examples/multiplexed_signal.dbc"); err != nil {
+		panic(err)
+	}
 }

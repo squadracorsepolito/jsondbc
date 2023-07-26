@@ -5,67 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"unicode"
 )
-
-type tokenKind uint
-
-const (
-	tokenError tokenKind = iota
-	tokenEOF
-	tokenSpace
-
-	tokenIdent
-	tokenNumber
-	tokenNumberRange
-	tokenString
-	tokenKeyword
-	tokenSyntax
-)
-
-var tokenNames = map[tokenKind]string{
-	tokenError: "error",
-	tokenEOF:   "eof",
-	tokenSpace: "space",
-
-	tokenIdent:       "ident",
-	tokenNumber:      "number",
-	tokenNumberRange: "number_range",
-	tokenString:      "string",
-	tokenKeyword:     "keyword",
-	tokenSyntax:      "syntax",
-}
-
-const eof = rune(0)
-
-type token struct {
-	kind     tokenKind
-	kindName string
-	value    string
-	start    int
-	col      int
-	line     int
-}
-
-func isSpace(ch rune) bool {
-	return ch == ' ' || ch == '\t' || ch == '\n'
-}
-
-func isLetter(ch rune) bool {
-	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
-}
-
-func isNumber(ch rune) bool {
-	return unicode.IsDigit(ch)
-}
-
-func isAlphaNumeric(ch rune) bool {
-	return isLetter(ch) || isNumber(ch) || ch == '_' || ch == '-'
-}
-
-func isEOF(ch rune) bool {
-	return ch == eof
-}
 
 type scanner struct {
 	r     *bufio.Reader
@@ -122,7 +62,7 @@ func (s *scanner) getPosition() (int, int) {
 	return col, line
 }
 
-func (s *scanner) emitToken(kind tokenKind) token {
+func (s *scanner) emitToken(kind tokenKind) *token {
 	val := s.value
 	if kind == tokenString {
 		val = s.value[1 : len(s.value)-1]
@@ -130,7 +70,7 @@ func (s *scanner) emitToken(kind tokenKind) token {
 
 	col, line := s.getPosition()
 
-	t := token{
+	t := &token{
 		kind:     kind,
 		kindName: tokenNames[kind],
 		value:    val,
@@ -145,7 +85,7 @@ func (s *scanner) emitToken(kind tokenKind) token {
 
 const maxErrorValueLength = 20
 
-func (s *scanner) emitErrorToken(msg string) token {
+func (s *scanner) emitErrorToken(msg string) *token {
 	val := ""
 	if len(s.value) > maxErrorValueLength {
 		val = fmt.Sprintf("%s : %s", msg, s.value[:maxErrorValueLength])
@@ -155,7 +95,7 @@ func (s *scanner) emitErrorToken(msg string) token {
 
 	col, line := s.getPosition()
 
-	t := token{
+	t := &token{
 		kind:     tokenError,
 		kindName: tokenNames[tokenError],
 		value:    val,
@@ -168,13 +108,13 @@ func (s *scanner) emitErrorToken(msg string) token {
 	return t
 }
 
-func (s *scanner) scan() token {
+func (s *scanner) scan() *token {
 	switch ch := s.read(); {
 	case isEOF(ch):
 		return s.emitToken(tokenEOF)
 
 	case isSpace(ch):
-		return s.emitToken(tokenSpace)
+		return s.scanSpace()
 
 	case isLetter(ch):
 		s.unread()
@@ -194,9 +134,17 @@ func (s *scanner) scan() token {
 	return s.emitErrorToken("unrecognized symbol")
 }
 
-func (s *scanner) scanText() token {
+func (s *scanner) scanText() *token {
+	firstCh := s.read()
+
 	buf := new(strings.Builder)
-	buf.WriteRune(s.read())
+	buf.WriteRune(firstCh)
+
+	isMuxSwitch := false
+	foundSwitchNum := false
+	if firstCh == 'm' {
+		isMuxSwitch = true
+	}
 
 loop:
 	for {
@@ -204,13 +152,24 @@ loop:
 		case isEOF(ch):
 			break loop
 
-		case !isAlphaNumeric(ch):
-			s.unread()
-			break loop
+		case isAlphaNumeric(ch):
+			if isMuxSwitch {
+				if isNumber(ch) {
+					foundSwitchNum = true
+				} else if !foundSwitchNum || ch != 'M' {
+					isMuxSwitch = false
+				}
+			}
+			buf.WriteRune(ch)
 
 		default:
-			buf.WriteRune(ch)
+			s.unread()
+			break loop
 		}
+	}
+
+	if (isMuxSwitch && buf.Len() > 1) || buf.Len() == 1 && firstCh == 'M' {
+		return s.emitToken(tokenMuxIndicator)
 	}
 
 	if _, ok := keywords[buf.String()]; ok {
@@ -220,7 +179,16 @@ loop:
 	return s.emitToken(tokenIdent)
 }
 
-func (s *scanner) scanNumber() token {
+func (s *scanner) scanSpace() *token {
+	ch := s.read()
+	for isSpace(ch) {
+		ch = s.read()
+	}
+	s.unread()
+	return s.emitToken(tokenSpace)
+}
+
+func (s *scanner) scanNumber() *token {
 	firstCh := s.read()
 	hasMore := false
 	isRange := false
@@ -230,6 +198,9 @@ loop:
 		switch ch := s.read(); {
 		case isEOF(ch):
 			break loop
+
+		case firstCh == '0' && (ch == 'x' || ch == 'X'):
+			return s.scanHexNumber()
 
 		case !isNumber(ch) && ch != '.':
 			if ch == '-' && isNumber(firstCh) && !isRange {
@@ -257,7 +228,24 @@ loop:
 	return s.emitToken(tokenNumber)
 }
 
-func (s *scanner) scanString() token {
+func (s *scanner) scanHexNumber() *token {
+	if !isHexNumber(s.read()) {
+		return s.emitErrorToken("invalid hex number")
+	}
+
+	for i := 0; i < 8; i++ {
+		ch := s.read()
+
+		if !isHexNumber(ch) {
+			s.unread()
+			break
+		}
+	}
+
+	return s.emitToken(tokenNumber)
+}
+
+func (s *scanner) scanString() *token {
 	for {
 		switch ch := s.read(); {
 		case isEOF(ch):
