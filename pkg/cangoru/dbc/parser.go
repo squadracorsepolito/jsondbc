@@ -2,7 +2,10 @@ package dbc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +19,38 @@ type Parser struct {
 	foundNewSym bool
 	foundBitTim bool
 	foundNode   bool
+}
+
+func (p *Parser) parseUint(val string) (uint32, error) {
+	res, err := strconv.ParseUint(val, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(res), nil
+}
+
+func (p *Parser) parseHexInt(val string) (int, error) {
+	if !strings.HasPrefix(val, "0x") && !strings.HasPrefix(val, "0X") {
+		return 0, errors.New("invalid hex number")
+	}
+	res, err := strconv.ParseUint(val[2:], 16, 32)
+	if err != nil {
+		return 0, err
+	}
+	return int(res), nil
+}
+
+func (p *Parser) parseInt(val string) (int, error) {
+	res, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		log.Print(err)
+		return 0, err
+	}
+	return int(res), nil
+}
+
+func (p *Parser) parseDouble(val string) (float64, error) {
+	return strconv.ParseFloat(val, 64)
 }
 
 func NewParser(file []byte) *Parser {
@@ -142,7 +177,7 @@ func (p *Parser) Parse() (*DBC, error) {
 					return nil, err
 				}
 				if sigTypeRef != nil {
-					ast.SignalTypeReferences = append(ast.SignalTypeReferences, sigTypeRef)
+					ast.SignalTypeRefs = append(ast.SignalTypeRefs, sigTypeRef)
 				} else {
 					ast.SignalTypes = append(ast.SignalTypes, sigType)
 				}
@@ -189,7 +224,7 @@ func (p *Parser) Parse() (*DBC, error) {
 				}
 				ast.SignalGroups = append(ast.SignalGroups, sigGroup)
 
-			case keywordSignalExtValueType:
+			case keywordSignalValueType:
 				sigExtValType, err := p.parseSignalExtValueType()
 				if err != nil {
 					return nil, err
@@ -255,7 +290,7 @@ func (p *Parser) parseNewSymbols() (*NewSymbols, error) {
 			break
 		}
 
-		if t.kind == tokenKeyword || t.isString() {
+		if t.kind == tokenKeyword || t.isIdent() {
 			if _, ok := posValues[t.value]; !ok {
 				return nil, p.errorf("invalid new symbol")
 			}
@@ -286,7 +321,7 @@ func (p *Parser) parseBitTiming() (*BitTiming, error) {
 		return nil, p.errorf("expected bit timing baudrate")
 	}
 
-	baudrate, err := parseUint(t.value)
+	baudrate, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +335,7 @@ func (p *Parser) parseBitTiming() (*BitTiming, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected bit timing for register 1")
 	}
-	btr1, err := parseUint(t.value)
+	btr1, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +349,7 @@ func (p *Parser) parseBitTiming() (*BitTiming, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected bit timing for register 2")
 	}
-	btr2, err := parseUint(t.value)
+	btr2, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +400,7 @@ func (p *Parser) parseValueDescription() (*ValueDescription, error) {
 			return valDesc, nil
 		}
 
-		valID, err := parseUint(t.value)
+		valID, err := p.parseUint(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse value description id as uint")
 		}
@@ -415,7 +450,7 @@ func (p *Parser) parseMessageID() (uint32, error) {
 	if !t.isNumber() {
 		return 0, p.errorf("expected message id")
 	}
-	id, err := parseUint(t.value)
+	id, err := p.parseUint(t.value)
 	if err != nil {
 		return 0, p.errorf("cannot parse message id as uint")
 	}
@@ -445,7 +480,7 @@ func (p *Parser) parseMessage() (*Message, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected message size")
 	}
-	size, err := parseUint(t.value)
+	size, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse message size as uint")
 	}
@@ -501,7 +536,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 			} else {
 				strNum = t.value[1:]
 			}
-			switchNum, err := parseUint(strNum)
+			switchNum, err := p.parseUint(strNum)
 			if err != nil {
 				return nil, p.errorf("cannot parse signal multiplexer switch number as uint")
 			}
@@ -520,7 +555,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal start bit")
 	}
-	startBit, err := parseUint(t.value)
+	startBit, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal start bit as uint")
 	}
@@ -534,7 +569,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal size")
 	}
-	size, err := parseUint(t.value)
+	size, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal size as uint")
 	}
@@ -548,7 +583,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal byte order")
 	}
-	byteOrder, err := parseUint(t.value)
+	byteOrder, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal byte order as uint")
 	}
@@ -579,7 +614,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal factor")
 	}
-	factor, err := parseDouble(t.value)
+	factor, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal factor as double")
 	}
@@ -593,7 +628,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal offset")
 	}
-	offset, err := parseDouble(t.value)
+	offset, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal offset as double")
 	}
@@ -611,7 +646,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal minimum")
 	}
-	min, err := parseDouble(t.value)
+	min, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal minimum as double")
 	}
@@ -625,7 +660,7 @@ func (p *Parser) parseSignal() (*Signal, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal maximum")
 	}
-	max, err := parseDouble(t.value)
+	max, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal maximum as double")
 	}
@@ -716,7 +751,7 @@ func (p *Parser) parseEnvVar() (*EnvVar, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected envvar type")
 	}
-	typ, err := parseUint(t.value)
+	typ, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse envvar type as uint")
 	}
@@ -738,7 +773,7 @@ func (p *Parser) parseEnvVar() (*EnvVar, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected envvar minimum value")
 	}
-	min, err := parseDouble(t.value)
+	min, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse envvar minimum value as double")
 	}
@@ -752,7 +787,7 @@ func (p *Parser) parseEnvVar() (*EnvVar, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected envvar maximum value")
 	}
-	max, err := parseDouble(t.value)
+	max, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse envvar maximum value as double")
 	}
@@ -772,7 +807,7 @@ func (p *Parser) parseEnvVar() (*EnvVar, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected envvar initial value")
 	}
-	initialVal, err := parseDouble(t.value)
+	initialVal, err := p.parseDouble(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse envvar initial value as double")
 	}
@@ -782,7 +817,7 @@ func (p *Parser) parseEnvVar() (*EnvVar, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected envvar id")
 	}
-	id, err := parseUint(t.value)
+	id, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse envvar id as uint")
 	}
@@ -842,7 +877,7 @@ func (p *Parser) parseEnvVarData() (*EnvVarData, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected envvar data size")
 	}
-	dataSize, err := parseUint(t.value)
+	dataSize, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse envvar data size as uint")
 	}
@@ -855,9 +890,9 @@ func (p *Parser) parseEnvVarData() (*EnvVarData, error) {
 	return evData, nil
 }
 
-func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
+func (p *Parser) parseSignalType() (*SignalType, *SignalTypeRef, error) {
 	sigType := new(SignalType)
-	sigTypeRef := new(SignalTypeReference)
+	sigTypeRef := new(SignalTypeRef)
 
 	t := p.scan()
 	p.unscan()
@@ -877,11 +912,6 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal start bit")
 		}
-		startBit, err := parseUint(t.value)
-		if err != nil {
-			return nil, nil, p.errorf("cannot parse signal start bit as uint")
-		}
-		sigType.StartBit = startBit
 
 		if err := p.expectSyntax(syntaxPipe); err != nil {
 			return nil, nil, err
@@ -891,7 +921,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal size")
 		}
-		size, err := parseUint(t.value)
+		size, err := p.parseUint(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal size as uint")
 		}
@@ -905,7 +935,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal byte order")
 		}
-		byteOrder, err := parseUint(t.value)
+		byteOrder, err := p.parseUint(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal byte order as uint")
 		}
@@ -936,7 +966,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal factor")
 		}
-		factor, err := parseDouble(t.value)
+		factor, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal factor as double")
 		}
@@ -950,7 +980,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal offset")
 		}
-		offset, err := parseDouble(t.value)
+		offset, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal offset as double")
 		}
@@ -968,7 +998,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal minimum")
 		}
-		min, err := parseDouble(t.value)
+		min, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal minimum as double")
 		}
@@ -982,7 +1012,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal maximum")
 		}
-		max, err := parseDouble(t.value)
+		max, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal maximum as double")
 		}
@@ -1002,7 +1032,7 @@ func (p *Parser) parseSignalType() (*SignalType, *SignalTypeReference, error) {
 		if !t.isNumber() {
 			return nil, nil, p.errorf("expected signal default value")
 		}
-		defVal, err := parseDouble(t.value)
+		defVal, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, nil, p.errorf("cannot parse signal default value as double")
 		}
@@ -1188,7 +1218,7 @@ func (p *Parser) parseAttribute() (*Attribute, error) {
 		if !t.isNumber() {
 			return nil, p.errorf("expected int attribute min value")
 		}
-		minInt, err := parseInt(t.value)
+		minInt, err := p.parseInt(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse int attribute min value as int")
 		}
@@ -1197,7 +1227,7 @@ func (p *Parser) parseAttribute() (*Attribute, error) {
 		if !t.isNumber() {
 			return nil, p.errorf("expected int attribute max value")
 		}
-		maxInt, err := parseInt(t.value)
+		maxInt, err := p.parseInt(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse int attribute max value as int")
 		}
@@ -1209,7 +1239,7 @@ func (p *Parser) parseAttribute() (*Attribute, error) {
 		if !t.isNumber() {
 			return nil, p.errorf("expected hex attribute min value")
 		}
-		minHex, err := parseHexInt(t.value)
+		minHex, err := p.parseHexInt(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse hex attribute min value as int")
 		}
@@ -1218,7 +1248,7 @@ func (p *Parser) parseAttribute() (*Attribute, error) {
 		if !t.isNumber() {
 			return nil, p.errorf("expected hex attribute max value")
 		}
-		maxHex, err := parseHexInt(t.value)
+		maxHex, err := p.parseHexInt(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse hex attribute max value as int")
 		}
@@ -1230,7 +1260,7 @@ func (p *Parser) parseAttribute() (*Attribute, error) {
 		if !t.isNumber() {
 			return nil, p.errorf("expected float attribute min value")
 		}
-		minFloat, err := parseDouble(t.value)
+		minFloat, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse float attribute min value as double")
 		}
@@ -1239,7 +1269,7 @@ func (p *Parser) parseAttribute() (*Attribute, error) {
 		if !t.isNumber() {
 			return nil, p.errorf("expected float attribute max value")
 		}
-		maxFloat, err := parseDouble(t.value)
+		maxFloat, err := p.parseDouble(t.value)
 		if err != nil {
 			return nil, p.errorf("cannot parse float attribute max value as double")
 		}
@@ -1445,7 +1475,7 @@ func (p *Parser) parseSignalGroup() (*SignalGroup, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal group repetitions")
 	}
-	r, err := parseUint(t.value)
+	r, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal group repetitions as uint")
 	}
@@ -1489,7 +1519,7 @@ func (p *Parser) parseSignalExtValueType() (*SignalExtValueType, error) {
 	if !t.isNumber() {
 		return nil, p.errorf("expected signal extended value type")
 	}
-	vt, err := parseUint(t.value)
+	vt, err := p.parseUint(t.value)
 	if err != nil {
 		return nil, p.errorf("cannot parse signal extended value type as uint")
 	}
@@ -1519,12 +1549,12 @@ func (p *Parser) parseExtendedMuxRange() (*ExtendedMuxRange, error) {
 		return nil, p.errorf("expected extended mux range")
 	}
 	tmpRange := strings.Split(t.value, "-")
-	from, err := parseUint(tmpRange[0])
+	from, err := p.parseUint(tmpRange[0])
 	if err != nil {
 		return nil, p.errorf("cannot parse extended mux range as uint")
 	}
 	extMuxR.From = from
-	to, err := parseUint(tmpRange[1])
+	to, err := p.parseUint(tmpRange[1])
 	if err != nil {
 		return nil, p.errorf("cannot parse extended mux range as uint")
 	}

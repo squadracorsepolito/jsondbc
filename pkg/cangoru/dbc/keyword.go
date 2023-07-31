@@ -15,7 +15,7 @@ const (
 	keywordMessageTransmitter
 
 	keywordSignal
-	keywordSignalExtValueType
+	keywordSignalValueType
 
 	keywordValueTable
 	keywordValueEncoding
@@ -53,7 +53,7 @@ var keywords = map[string]keywordKind{
 	"BO_TX_BU_": keywordMessageTransmitter,
 
 	"SG_":          keywordSignal,
-	"SIG_VALTYPE_": keywordSignalExtValueType,
+	"SIG_VALTYPE_": keywordSignalValueType,
 
 	"VAL_TABLE_": keywordValueTable,
 	"VAL_":       keywordValueEncoding,
@@ -82,7 +82,17 @@ func getKeywordKind(s string) keywordKind {
 	return keywords[s]
 }
 
+func getKeyword(kind keywordKind) string {
+	for str, k := range keywords {
+		if k == kind {
+			return str
+		}
+	}
+	return ""
+}
+
 var newSymbolsValues = []string{
+	"NS_DESC_",
 	"CM_",
 	"BA_DEF_",
 	"BA_",
@@ -98,6 +108,8 @@ var newSymbolsValues = []string{
 	"SGTYPE_",
 	"SGTYPE_VAL_",
 	"BA_DEF_SGTYPE_",
+	"BA_SGTYPE_",
+	"SIG_TYPE_REF_",
 	"SIG_VALTYPE_",
 	"SIGTYPE_VALTYPE_",
 	"BO_TX_BU_",

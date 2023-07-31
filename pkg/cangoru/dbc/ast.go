@@ -1,25 +1,25 @@
 package dbc
 
 type DBC struct {
-	Version              string
-	NewSymbols           *NewSymbols
-	BitTiming            *BitTiming
-	Nodes                *Nodes
-	ValueTables          []*ValueTable
-	Messages             []*Message
-	MessageTransmitters  []*MessageTransmitter
-	EnvVars              []*EnvVar
-	EnvVarDatas          []*EnvVarData
-	SignalTypes          []*SignalType
-	Comments             []*Comment
-	Attributes           []*Attribute
-	AttributeDefaults    []*AttributeDefault
-	AttributeValues      []*AttributeValue
-	ValueEncodings       []*ValueEncoding
-	SignalTypeReferences []*SignalTypeReference
-	SignalGroups         []*SignalGroup
-	SignalExtValueTypes  []*SignalExtValueType
-	ExtendedMuxes        []*ExtendedMux
+	Version             string
+	NewSymbols          *NewSymbols
+	BitTiming           *BitTiming
+	Nodes               *Nodes
+	ValueTables         []*ValueTable
+	Messages            []*Message
+	MessageTransmitters []*MessageTransmitter
+	EnvVars             []*EnvVar
+	EnvVarDatas         []*EnvVarData
+	SignalTypes         []*SignalType
+	Comments            []*Comment
+	Attributes          []*Attribute
+	AttributeDefaults   []*AttributeDefault
+	AttributeValues     []*AttributeValue
+	ValueEncodings      []*ValueEncoding
+	SignalTypeRefs      []*SignalTypeRef
+	SignalGroups        []*SignalGroup
+	SignalExtValueTypes []*SignalExtValueType
+	ExtendedMuxes       []*ExtendedMux
 }
 
 type NewSymbols struct {
@@ -160,7 +160,6 @@ type EnvVarData struct {
 type SignalType struct {
 	TypeName       string
 	Size           uint32
-	StartBit       uint32
 	ByteOrder      SignalByteOrder
 	ValueType      SignalValueType
 	Factor         float64
@@ -172,7 +171,7 @@ type SignalType struct {
 	ValueTableName string
 }
 
-type SignalTypeReference struct {
+type SignalTypeRef struct {
 	TypeName   string
 	MessageID  uint32
 	SignalName string

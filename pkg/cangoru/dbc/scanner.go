@@ -5,7 +5,39 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 )
+
+const eof = rune(0)
+
+func isSpace(ch rune) bool {
+	return ch == ' ' || ch == '\t' || ch == '\n'
+}
+
+func isLetter(ch rune) bool {
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
+}
+
+func isNumber(ch rune) bool {
+	return unicode.IsDigit(ch)
+}
+
+func isHexNumber(ch rune) bool {
+	return isNumber(ch) || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')
+}
+
+func isAlphaNumeric(ch rune) bool {
+	return isLetter(ch) || isNumber(ch) || ch == '_' || ch == '-'
+}
+
+func isEOF(ch rune) bool {
+	return ch == eof
+}
+
+func isSyntaxKeyword(r rune) bool {
+	_, ok := syntaxKeywords[r]
+	return ok
+}
 
 type scanner struct {
 	r     *bufio.Reader
