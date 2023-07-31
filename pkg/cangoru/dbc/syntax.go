@@ -30,6 +30,11 @@ var syntaxKeywords = map[rune]syntaxKind{
 	'-': syntaxMinus,
 }
 
+func isSyntaxKeyword(r rune) bool {
+	_, ok := syntaxKeywords[r]
+	return ok
+}
+
 func getSyntaxKind(str string) syntaxKind {
 	return syntaxKeywords[rune(str[0])]
 }

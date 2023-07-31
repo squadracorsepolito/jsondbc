@@ -10,6 +10,10 @@ import (
 
 const eof = rune(0)
 
+func isEOF(ch rune) bool {
+	return ch == eof
+}
+
 func isSpace(ch rune) bool {
 	return ch == ' ' || ch == '\t' || ch == '\n'
 }
@@ -28,15 +32,6 @@ func isHexNumber(ch rune) bool {
 
 func isAlphaNumeric(ch rune) bool {
 	return isLetter(ch) || isNumber(ch) || ch == '_' || ch == '-'
-}
-
-func isEOF(ch rune) bool {
-	return ch == eof
-}
-
-func isSyntaxKeyword(r rune) bool {
-	_, ok := syntaxKeywords[r]
-	return ok
 }
 
 type scanner struct {
