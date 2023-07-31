@@ -17,15 +17,11 @@ func writeSlice[T any](slice []T, writeFn func(T), newLineFn func()) {
 
 type Writer struct {
 	f *strings.Builder
-
-	ast *DBC
 }
 
-func NewWriter(ast *DBC) *Writer {
+func NewWriter() *Writer {
 	return &Writer{
 		f: &strings.Builder{},
-
-		ast: ast,
 	}
 
 }
@@ -62,38 +58,38 @@ func (w *Writer) formatUint(val uint32) string {
 	return strconv.FormatUint(uint64(val), 10)
 }
 
-func (w *Writer) Write() string {
-	if w.ast.Version != "" {
-		w.writeVersion(w.ast.Version)
+func (w *Writer) Write(ast *DBC) string {
+	if ast.Version != "" {
+		w.writeVersion(ast.Version)
 	}
 
-	if w.ast.NewSymbols != nil {
-		w.writeNewSymbols(w.ast.NewSymbols)
+	if ast.NewSymbols != nil {
+		w.writeNewSymbols(ast.NewSymbols)
 	}
 
-	if w.ast.BitTiming != nil {
-		w.writeBitTiming(w.ast.BitTiming)
+	if ast.BitTiming != nil {
+		w.writeBitTiming(ast.BitTiming)
 	}
 
-	if w.ast.Nodes != nil {
-		w.writeNodes(w.ast.Nodes)
+	if ast.Nodes != nil {
+		w.writeNodes(ast.Nodes)
 	}
 
-	writeSlice(w.ast.ValueTables, w.writeValueTable, w.newLine)
-	writeSlice(w.ast.Messages, w.writeMessage, w.newLine)
-	writeSlice(w.ast.MessageTransmitters, w.writeMessageTransmitter, w.newLine)
-	writeSlice(w.ast.EnvVars, w.writeEnvVar, w.newLine)
-	writeSlice(w.ast.EnvVarDatas, w.writeEnvVarData, w.newLine)
-	writeSlice(w.ast.SignalTypes, w.writeSignalType, w.newLine)
-	writeSlice(w.ast.Comments, w.writeComment, w.newLine)
-	writeSlice(w.ast.Attributes, w.writeAttribute, w.newLine)
-	writeSlice(w.ast.AttributeDefaults, w.writeAttributeDefault, w.newLine)
-	writeSlice(w.ast.AttributeValues, w.writeAttributeValue, w.newLine)
-	writeSlice(w.ast.ValueEncodings, w.writeValueEncoding, w.newLine)
-	writeSlice(w.ast.SignalTypeRefs, w.writeSignalTypeRef, w.newLine)
-	writeSlice(w.ast.SignalGroups, w.writeSignalGroup, w.newLine)
-	writeSlice(w.ast.SignalExtValueTypes, w.writeSignalExtValueType, w.newLine)
-	writeSlice(w.ast.ExtendedMuxes, w.writeExtendedMux, w.newLine)
+	writeSlice(ast.ValueTables, w.writeValueTable, w.newLine)
+	writeSlice(ast.Messages, w.writeMessage, w.newLine)
+	writeSlice(ast.MessageTransmitters, w.writeMessageTransmitter, w.newLine)
+	writeSlice(ast.EnvVars, w.writeEnvVar, w.newLine)
+	writeSlice(ast.EnvVarDatas, w.writeEnvVarData, w.newLine)
+	writeSlice(ast.SignalTypes, w.writeSignalType, w.newLine)
+	writeSlice(ast.Comments, w.writeComment, w.newLine)
+	writeSlice(ast.Attributes, w.writeAttribute, w.newLine)
+	writeSlice(ast.AttributeDefaults, w.writeAttributeDefault, w.newLine)
+	writeSlice(ast.AttributeValues, w.writeAttributeValue, w.newLine)
+	writeSlice(ast.ValueEncodings, w.writeValueEncoding, w.newLine)
+	writeSlice(ast.SignalTypeRefs, w.writeSignalTypeRef, w.newLine)
+	writeSlice(ast.SignalGroups, w.writeSignalGroup, w.newLine)
+	writeSlice(ast.SignalExtValueTypes, w.writeSignalExtValueType, w.newLine)
+	writeSlice(ast.ExtendedMuxes, w.writeExtendedMux, w.newLine)
 
 	return w.f.String()
 }
