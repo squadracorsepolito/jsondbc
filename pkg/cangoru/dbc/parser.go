@@ -393,25 +393,25 @@ func (p *Parser) parseNodes() (*Nodes, error) {
 func (p *Parser) parseValueDescription() (*ValueDescription, error) {
 	valDesc := new(ValueDescription)
 
-	for {
-		t := p.scan()
-		if !t.isNumber() {
-			p.unscan()
-			return valDesc, nil
-		}
-
-		valID, err := p.parseUint(t.value)
-		if err != nil {
-			return nil, p.errorf("cannot parse value description id as uint")
-		}
-		valDesc.ID = valID
-
-		t = p.scan()
-		if !t.isString() {
-			return nil, p.errorf("expected value description name after id")
-		}
-		valDesc.Name = t.value
+	t := p.scan()
+	if !t.isNumber() {
+		p.unscan()
+		return valDesc, nil
 	}
+
+	valID, err := p.parseUint(t.value)
+	if err != nil {
+		return nil, p.errorf("cannot parse value description id as uint")
+	}
+	valDesc.ID = valID
+
+	t = p.scan()
+	if !t.isString() {
+		return nil, p.errorf("expected value description name after id")
+	}
+	valDesc.Name = t.value
+
+	return valDesc, nil
 }
 
 func (p *Parser) parseValueTable() (*ValueTable, error) {
