@@ -45,18 +45,22 @@ CM_ BO_ 2364540158 "desc 0 (period: 100 ms)";
 CM_ SG_ 2364540158 Engine_Speed "desc 1";
 CM_ SG_ 2364540158 Engine_Status "desc 2";
 
+BA_DEF_ "HexAtt" HEX 0x00000000 0xffffffff;
 BA_DEF_ "FloatAtt" FLOAT 0 25.75;
 BA_DEF_ BU_ "TestString" STRING ;
 BA_DEF_ BO_ "VFrameFormat" ENUM "StandardCAN","ExtendedCAN","reserved","J1939PG";
 BA_DEF_ BO_ "MsgPeriodMS" INT 0 65535;
 BA_DEF_ SG_ "SPN" INT 0 524287;
 BA_DEF_ SG_ "TestFloatAtt" FLOAT 0 25.75;
+
+BA_DEF_DEF_ "HexAtt" 0xaaaaaaaa;
 BA_DEF_DEF_ "FloatAtt" 1.5;
 BA_DEF_DEF_ "TestString" "";
 BA_DEF_DEF_ "VFrameFormat" "J1939PG";
 BA_DEF_DEF_ "MsgPeriodMS" 0;
 BA_DEF_DEF_ "SPN" 0;
 BA_DEF_DEF_ "TestFloatAtt" 1.5;
+
 BA_ "TestString" BU_ Node2 "test";
 BA_ "MsgPeriodMS" BO_ 2364540158 100;
 BA_ "VFrameFormat" BO_ 2364540158 0;
