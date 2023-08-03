@@ -325,11 +325,20 @@ func (w *Writer) writeAttribute(att *Attribute) {
 }
 
 func (w *Writer) writeAttributeDefault(attDef *AttributeDefault) {
-	w.println(`%s "%s" %s;`,
-		getKeyword(keywordAttributeDefault),
-		attDef.AttributeName,
-		attDef.ValueLiteral,
-	)
+	w.print(`%s "%s" `, getKeyword(keywordAttributeDefault), attDef.AttributeName)
+
+	switch attDef.Type {
+	case AttributeDefaultInt:
+		w.print(w.formatInt(attDef.ValueInt))
+	case AttributeDefaultHex:
+		w.print(w.formatHexInt(attDef.ValueHex))
+	case AttributeDefaultFloat:
+		w.print(w.formatDouble(attDef.ValueFloat))
+	case AttributeDefaultString:
+		w.print(w.formatString(attDef.ValueString))
+	}
+
+	w.println(";")
 }
 
 func (w *Writer) writeAttributeValue(attVal *AttributeValue) {
@@ -346,7 +355,18 @@ func (w *Writer) writeAttributeValue(attVal *AttributeValue) {
 		w.print("%s %s ", getKeyword(keywordEnvVar), attVal.EnvVarName)
 	}
 
-	w.println("%s;", attVal.ValueLiteral)
+	switch attVal.Type {
+	case AttributeValueInt:
+		w.print(w.formatInt(attVal.ValueInt))
+	case AttributeValueHex:
+		w.print(w.formatHexInt(attVal.ValueHex))
+	case AttributeValueFloat:
+		w.print(w.formatDouble(attVal.ValueFloat))
+	case AttributeValueString:
+		w.print(w.formatString(attVal.ValueString))
+	}
+
+	w.println(";")
 }
 
 func (w *Writer) writeValueEncoding(valEnc *ValueEncoding) {

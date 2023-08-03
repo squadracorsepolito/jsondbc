@@ -1,5 +1,11 @@
 package dbc
 
+type SpecialAttribute string
+
+const (
+	MsgPeriodMS SpecialAttribute = "MsgPeriodMS"
+)
+
 type DBC struct {
 	Version             string
 	NewSymbols          *NewSymbols
@@ -236,19 +242,45 @@ type Attribute struct {
 	EnumValues []string
 }
 
+type AttributeDefaultType uint
+
+const (
+	AttributeDefaultInt AttributeDefaultType = iota
+	AttributeDefaultString
+	AttributeDefaultFloat
+	AttributeDefaultHex
+)
+
 type AttributeDefault struct {
+	Type          AttributeDefaultType
 	AttributeName string
-	ValueLiteral  string
+	ValueString   string
+	ValueInt      int
+	ValueHex      int
+	ValueFloat    float64
 }
+
+type AttributeValueType uint
+
+const (
+	AttributeValueInt AttributeValueType = iota
+	AttributeValueString
+	AttributeValueFloat
+	AttributeValueHex
+)
 
 type AttributeValue struct {
 	AttributeKind AttributeKind
+	Type          AttributeValueType
 	AttributeName string
 	NodeName      string
 	MessageID     uint32
 	SignalName    string
 	EnvVarName    string
-	ValueLiteral  string
+	ValueString   string
+	ValueInt      int
+	ValueHex      int
+	ValueFloat    float64
 }
 
 type ExtendedMuxRange struct {

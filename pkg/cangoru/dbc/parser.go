@@ -1318,8 +1318,36 @@ func (p *Parser) parseAttributeDefault() (*AttributeDefault, error) {
 	attDef.AttributeName = attName
 
 	t := p.scan()
-	if t.isString() || t.isNumber() {
-		attDef.ValueLiteral = t.value
+	if t.isString() {
+		attDef.ValueString = t.value
+		attDef.Type = AttributeDefaultString
+
+	} else if t.isNumber() {
+		if strings.HasPrefix(t.value, "0x") || strings.HasPrefix(t.value, "0X") {
+			hexVal, err := p.parseHexInt(t.value)
+			if err != nil {
+				return nil, p.errorf("cannot parse hex attribute default value as int")
+			}
+			attDef.ValueHex = hexVal
+			attDef.Type = AttributeDefaultHex
+
+		} else if strings.Contains(t.value, ".") {
+			floatVal, err := p.parseDouble(t.value)
+			if err != nil {
+				return nil, p.errorf("cannot parse float attribute default value as double")
+			}
+			attDef.ValueFloat = floatVal
+			attDef.Type = AttributeDefaultFloat
+
+		} else {
+			invVal, err := p.parseInt(t.value)
+			if err != nil {
+				return nil, p.errorf("cannot parse int attribute default value as int")
+			}
+			attDef.ValueInt = invVal
+			attDef.Type = AttributeDefaultInt
+		}
+
 	} else {
 		return nil, p.errorf("expected attribute default value")
 	}
@@ -1394,7 +1422,39 @@ func (p *Parser) parseAttributeValue() (*AttributeValue, error) {
 	}
 
 	t = p.scan()
-	attVal.ValueLiteral = t.value
+	if t.isString() {
+		attVal.ValueString = t.value
+		attVal.Type = AttributeValueString
+
+	} else if t.isNumber() {
+		if strings.HasPrefix(t.value, "0x") || strings.HasPrefix(t.value, "0X") {
+			hexVal, err := p.parseHexInt(t.value)
+			if err != nil {
+				return nil, p.errorf("cannot parse hex attribute value as int")
+			}
+			attVal.ValueHex = hexVal
+			attVal.Type = AttributeValueHex
+
+		} else if strings.Contains(t.value, ".") {
+			floatVal, err := p.parseDouble(t.value)
+			if err != nil {
+				return nil, p.errorf("cannot parse float attribute value as double")
+			}
+			attVal.ValueFloat = floatVal
+			attVal.Type = AttributeValueFloat
+
+		} else {
+			invVal, err := p.parseInt(t.value)
+			if err != nil {
+				return nil, p.errorf("cannot parse int attribute value as int")
+			}
+			attVal.ValueInt = invVal
+			attVal.Type = AttributeValueInt
+		}
+
+	} else {
+		return nil, p.errorf("expected attribute value")
+	}
 
 	if err := p.expectSyntax(syntaxSemicolon); err != nil {
 		return nil, err
