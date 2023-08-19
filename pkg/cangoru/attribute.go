@@ -2,6 +2,9 @@ package cangoru
 
 import (
 	"fmt"
+
+	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
+	"golang.org/x/exp/slices"
 )
 
 type AttributeType uint
@@ -23,6 +26,19 @@ const (
 	AttributeKindSignal
 )
 
+func (ak AttributeKind) ToDBC() dbc.AttributeKind {
+	switch ak {
+	case AttributeKindNode:
+		return dbc.AttributeNode
+	case AttributeKindMessage:
+		return dbc.AttributeMessage
+	case AttributeKindSignal:
+		return dbc.AttributeSignal
+	default:
+		return dbc.AttributeGeneral
+	}
+}
+
 type AttributeDefault[T int | float64 | string] struct {
 	Default T
 }
@@ -39,7 +55,7 @@ func (an *AttributeNumber[T]) isInRange(value T) bool {
 }
 
 type AttributeEnum struct {
-	AttributeDefault[int]
+	AttributeDefault[string]
 
 	Values []string
 }
@@ -177,17 +193,64 @@ func NewEnumAttribute(kind AttributeKind, name string, values []string) *Attribu
 	}
 }
 
-func (a *Attribute) SetEnumDefault(def int) error {
+func (a *Attribute) SetEnumDefault(def string) error {
 	if a.Type != AttributeTypeEnum {
 		return a.errorf("is not an enum attribute")
 	}
 
-	if !a.Enum.isInRange(def) {
-		return a.errorf("default value is out of range")
+	if !slices.Contains(a.Enum.Values, def) {
+		return a.errorf("default value is not defined in enum")
 	}
 
 	a.Enum.Default = def
 	return nil
+}
+
+func (a *Attribute) ToDBC() (*dbc.Attribute, *dbc.AttributeDefault) {
+	att := &dbc.Attribute{
+		Name: a.Name,
+		Kind: a.Kind.ToDBC(),
+	}
+
+	attDef := &dbc.AttributeDefault{
+		AttributeName: a.Name,
+	}
+
+	switch a.Type {
+	case AttributeTypeInt:
+		att.Type = dbc.AttributeInt
+		att.MinInt = a.Int.From
+		att.MaxInt = a.Int.To
+		attDef.Type = dbc.AttributeDefaultInt
+		attDef.ValueInt = a.Int.Default
+
+	case AttributeTypeFloat:
+		att.Type = dbc.AttributeFloat
+		att.MinFloat = a.Float.From
+		att.MaxFloat = a.Float.To
+		attDef.Type = dbc.AttributeDefaultFloat
+		attDef.ValueFloat = a.Float.Default
+
+	case AttributeTypeHex:
+		att.Type = dbc.AttributeHex
+		att.MinHex = a.Hex.From
+		att.MaxHex = a.Hex.To
+		attDef.Type = dbc.AttributeDefaultHex
+		attDef.ValueHex = a.Hex.Default
+
+	case AttributeTypeString:
+		att.Type = dbc.AttributeString
+		attDef.Type = dbc.AttributeDefaultString
+		attDef.ValueString = a.String.Default
+
+	case AttributeTypeEnum:
+		att.Type = dbc.AttributeEnum
+		att.EnumValues = a.Enum.Values
+		attDef.Type = dbc.AttributeDefaultString
+		attDef.ValueString = a.Enum.Default
+	}
+
+	return att, attDef
 }
 
 type AttributeValue struct {
@@ -270,6 +333,37 @@ func NewEnumAttributeValue(att *Attribute, value int) (*AttributeValue, error) {
 	}, nil
 }
 
+func (av *AttributeValue) ToDBC() *dbc.AttributeValue {
+	attVal := &dbc.AttributeValue{
+		AttributeName: av.Definition.Name,
+		AttributeKind: av.Definition.Kind.ToDBC(),
+	}
+
+	switch av.Definition.Type {
+	case AttributeTypeInt:
+		attVal.Type = dbc.AttributeValueInt
+		attVal.ValueInt = av.IntValue
+
+	case AttributeTypeFloat:
+		attVal.Type = dbc.AttributeValueFloat
+		attVal.ValueFloat = av.FloatValue
+
+	case AttributeTypeHex:
+		attVal.Type = dbc.AttributeValueHex
+		attVal.ValueHex = av.HexValue
+
+	case AttributeTypeString:
+		attVal.Type = dbc.AttributeValueString
+		attVal.ValueString = av.StringValue
+
+	case AttributeTypeEnum:
+		attVal.Type = dbc.AttributeValueInt
+		attVal.ValueInt = av.EnumValue
+	}
+
+	return attVal
+}
+
 type AttributeMap struct {
 	Attributes map[string]*AttributeValue
 }
@@ -279,4 +373,8 @@ func (am *AttributeMap) AssignAttribute(att *AttributeValue) {
 		am.Attributes = make(map[string]*AttributeValue)
 	}
 	am.Attributes[att.Definition.Name] = att
+}
+
+func (am *AttributeMap) GetAttributeValues() map[string]*AttributeValue {
+	return am.Attributes
 }

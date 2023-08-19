@@ -2,12 +2,24 @@ package cangoru
 
 import (
 	"fmt"
+
+	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 type MessageID uint32
 
 func NewMessageID(id uint32) MessageID {
 	return MessageID(id)
+}
+
+func (id MessageID) ToDBC() uint32 {
+	return uint32(id)
+}
+
+func (id MessageID) compare(other MessageID) int {
+	return int(id - other)
 }
 
 type bitmaskType uint8
@@ -50,11 +62,12 @@ type Message struct {
 	Description
 	AttributeMap
 
-	ID      MessageID
-	Name    string
-	Size    uint
-	Period  uint
-	Signals map[string]*Signal
+	ID          MessageID
+	Name        string
+	Size        uint
+	Period      uint
+	Signals     map[string]*Signal
+	Transmitter *Node
 
 	bitset             *messageBitset
 	multiplexorSignals map[string]*Signal
@@ -127,4 +140,28 @@ func (m *Message) HasMuxSignals() bool {
 
 func (m *Message) HasExtendedMuxSignals() bool {
 	return len(m.multiplexorSignals) > 1
+}
+
+func (m *Message) ToDBC() *dbc.Message {
+	msg := &dbc.Message{
+		ID:          uint32(m.ID),
+		Name:        m.Name,
+		Size:        uint32(m.Size),
+		Transmitter: dbc.DummyNode,
+		Signals:     []*dbc.Signal{},
+	}
+
+	if m.Transmitter != nil {
+		msg.Transmitter = m.Transmitter.Name
+	}
+
+	signals := maps.Values(m.Signals)
+	slices.SortFunc(signals, func(a, b *Signal) int {
+		return int(a.StartBit - b.StartBit)
+	})
+	for _, signal := range signals {
+		msg.Signals = append(msg.Signals, signal.ToDBC())
+	}
+
+	return msg
 }

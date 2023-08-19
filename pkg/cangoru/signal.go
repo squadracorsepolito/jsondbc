@@ -3,6 +3,8 @@ package cangoru
 import (
 	"fmt"
 	"math"
+
+	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
 )
 
 type SignalByteOrder uint
@@ -40,11 +42,13 @@ type Signal struct {
 	Min       float64
 	Max       float64
 	Unit      string
+	Receivers []*Node
 	MapValues map[uint]string
 
 	IsMultiplexor bool
 	IsMultiplexed bool
 	MuxSignals    []*Signal
+	Multiplexor   *Signal
 	MuxIndexes    []uint
 }
 
@@ -115,5 +119,46 @@ func (s *Signal) AddMuxSignal(muxSig *Signal, muxIndexes ...uint) error {
 	}
 	muxSig.MuxIndexes = muxIndexes
 	s.MuxSignals = append(s.MuxSignals, muxSig)
+	muxSig.Multiplexor = s
 	return nil
+}
+
+func (s *Signal) ToDBC() *dbc.Signal {
+	sig := &dbc.Signal{
+		Name:           s.Name,
+		IsMultiplexor:  s.IsMultiplexor,
+		IsMultiplexed:  s.IsMultiplexed,
+		MuxSwitchValue: 0,
+		Size:           uint32(s.Size),
+		StartBit:       uint32(s.StartBit),
+		ByteOrder:      dbc.SignalLittleEndian,
+		ValueType:      dbc.SignalUnsigned,
+		Factor:         s.Factor,
+		Offset:         s.Offset,
+		Min:            s.Min,
+		Max:            s.Max,
+		Unit:           s.Unit,
+		Receivers:      []string{},
+	}
+
+	if s.IsMultiplexed {
+		sig.MuxSwitchValue = uint32(s.MuxIndexes[0])
+	}
+
+	if s.ByteOrder == BigEndian {
+		sig.ByteOrder = dbc.SignalBigEndian
+	}
+
+	if s.ValueType == Signed {
+		sig.ValueType = dbc.SignalSigned
+	}
+
+	if len(s.Receivers) == 0 {
+		sig.Receivers = append(sig.Receivers, dbc.DummyNode)
+	}
+	for _, receiver := range s.Receivers {
+		sig.Receivers = append(sig.Receivers, receiver.Name)
+	}
+
+	return sig
 }

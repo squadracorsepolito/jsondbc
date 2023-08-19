@@ -6,6 +6,10 @@ const (
 	MsgPeriodMS SpecialAttribute = "MsgPeriodMS"
 )
 
+func GetNewSymbols() []string {
+	return newSymbolsValues
+}
+
 type DBC struct {
 	Version             string
 	NewSymbols          *NewSymbols

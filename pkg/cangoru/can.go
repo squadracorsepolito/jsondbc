@@ -2,9 +2,23 @@ package cangoru
 
 import (
 	"fmt"
-
-	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
 )
+
+type Description struct {
+	Description string
+}
+
+func (d *Description) SetDescription(desc string) {
+	d.Description = desc
+}
+
+func (d *Description) GetDescription() string {
+	return d.Description
+}
+
+func (d *Description) HasDescription() bool {
+	return len(d.Description) > 0
+}
 
 type CAN struct {
 	Description
@@ -15,11 +29,6 @@ type CAN struct {
 	Nodes         map[string]*Node
 	Messages      map[MessageID]*Message
 	Attributes    map[string]*Attribute
-
-	//
-	//
-	//
-	tmp *dbc.DBC
 }
 
 func NewCAN() *CAN {

@@ -2,12 +2,13 @@ package cangoru
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path"
 
 	"github.com/squadracorsepolito/jsondbc/pkg/cangoru/dbc"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 func NewCANFromDBC(dbcFilename string) (*CAN, error) {
@@ -186,8 +187,6 @@ func (c *CAN) handleDBCValueEncoding(dbcValEnc *dbc.ValueEncoding) error {
 		return err
 	}
 
-	log.Print(dbcValEnc)
-
 	for _, val := range dbcValEnc.Values {
 		if err := sig.AddMapValue(uint(val.ID), val.Name); err != nil {
 			return err
@@ -285,7 +284,7 @@ func (c *CAN) handleDBCAttributeDefault(dbcAttDef *dbc.AttributeDefault) error {
 		}
 
 	case AttributeTypeEnum:
-		if err := att.SetEnumDefault(dbcAttDef.ValueInt); err != nil {
+		if err := att.SetEnumDefault(dbcAttDef.ValueString); err != nil {
 			return err
 		}
 
@@ -323,7 +322,6 @@ func (c *CAN) handleDBCAttributeValue(dbcAttVal *dbc.AttributeValue) error {
 		}
 
 	case AttributeTypeString:
-		log.Print("+ ", dbcAttVal.ValueString)
 		attVal, err = NewStringAttributeValue(att, dbcAttVal.ValueString)
 		if err != nil {
 			return err
@@ -427,6 +425,169 @@ func (c *CAN) ToDBC(dbcFilename string) error {
 	}
 	defer wFile.Close()
 
-	_, err = wFile.WriteString(writer.Write(c.tmp))
+	dbcFile := &dbc.DBC{
+		Version: c.VersionString,
+		NewSymbols: &dbc.NewSymbols{
+			Symbols: dbc.GetNewSymbols(),
+		},
+		BitTiming: &dbc.BitTiming{
+			Baudrate:      uint32(c.Baudrate),
+			BitTimingReg1: uint32(c.Baudrate),
+			BitTimingReg2: uint32(c.Baudrate),
+		},
+		Nodes: &dbc.Nodes{
+			Names: maps.Keys(c.Nodes),
+		},
+		ValueTables:         []*dbc.ValueTable{},
+		Messages:            []*dbc.Message{},
+		MessageTransmitters: []*dbc.MessageTransmitter{},
+		EnvVars:             []*dbc.EnvVar{},
+		EnvVarDatas:         []*dbc.EnvVarData{},
+		SignalTypes:         []*dbc.SignalType{},
+		Comments:            []*dbc.Comment{},
+		Attributes: []*dbc.Attribute{{
+			Name:   string(dbc.MsgPeriodMS),
+			Kind:   dbc.AttributeMessage,
+			Type:   dbc.AttributeInt,
+			MinInt: 0,
+			MaxInt: 65535,
+		}},
+		AttributeDefaults: []*dbc.AttributeDefault{{
+			AttributeName: string(dbc.MsgPeriodMS),
+			Type:          dbc.AttributeDefaultInt,
+			ValueInt:      0,
+		}},
+		AttributeValues:     []*dbc.AttributeValue{},
+		ValueEncodings:      []*dbc.ValueEncoding{},
+		SignalTypeRefs:      []*dbc.SignalTypeRef{},
+		SignalGroups:        []*dbc.SignalGroup{},
+		SignalExtValueTypes: []*dbc.SignalExtValueType{},
+		ExtendedMuxes:       []*dbc.ExtendedMux{},
+	}
+
+	messages := maps.Values(c.Messages)
+	slices.SortFunc(messages, func(a, b *Message) int {
+		return a.ID.compare(b.ID)
+	})
+	for _, msg := range messages {
+		dbcFile.Messages = append(dbcFile.Messages, msg.ToDBC())
+	}
+
+	for _, node := range c.Nodes {
+		if node.HasDescription() {
+			dbcFile.Comments = append(dbcFile.Comments, &dbc.Comment{
+				Kind:     dbc.CommentNode,
+				Text:     node.GetDescription(),
+				NodeName: node.Name,
+			})
+		}
+	}
+	for _, msg := range c.Messages {
+		if msg.HasDescription() {
+			dbcFile.Comments = append(dbcFile.Comments, &dbc.Comment{
+				Kind:      dbc.CommentMessage,
+				Text:      msg.GetDescription(),
+				MessageID: uint32(msg.ID),
+			})
+		}
+
+		for _, sig := range msg.Signals {
+			if sig.HasDescription() {
+				dbcFile.Comments = append(dbcFile.Comments, &dbc.Comment{
+					Kind:       dbc.CommentSignal,
+					Text:       sig.GetDescription(),
+					MessageID:  uint32(msg.ID),
+					SignalName: sig.Name,
+				})
+			}
+		}
+	}
+
+	for _, att := range c.Attributes {
+		if att.Name == string(dbc.MsgPeriodMS) {
+			continue
+		}
+		dbcAtt, dbcAttDef := att.ToDBC()
+		dbcFile.Attributes = append(dbcFile.Attributes, dbcAtt)
+		dbcFile.AttributeDefaults = append(dbcFile.AttributeDefaults, dbcAttDef)
+	}
+
+	for _, attVal := range c.GetAttributeValues() {
+		dbcFile.AttributeValues = append(dbcFile.AttributeValues, attVal.ToDBC())
+	}
+	for _, node := range c.Nodes {
+		for _, attVal := range node.GetAttributeValues() {
+			dbcAttVal := attVal.ToDBC()
+			dbcAttVal.NodeName = node.Name
+			dbcFile.AttributeValues = append(dbcFile.AttributeValues, dbcAttVal)
+		}
+	}
+	for _, msg := range c.Messages {
+		if msg.Period > 0 {
+			dbcFile.AttributeValues = append(dbcFile.AttributeValues, &dbc.AttributeValue{
+				AttributeKind: dbc.AttributeMessage,
+				Type:          dbc.AttributeValueInt,
+				AttributeName: string(dbc.MsgPeriodMS),
+				MessageID:     uint32(msg.ID),
+				ValueInt:      int(msg.Period),
+			})
+		}
+
+		for _, attVal := range msg.GetAttributeValues() {
+			dbcAttVal := attVal.ToDBC()
+			dbcAttVal.MessageID = msg.ID.ToDBC()
+			dbcFile.AttributeValues = append(dbcFile.AttributeValues, dbcAttVal)
+		}
+
+		for _, sig := range msg.Signals {
+			for _, attVal := range sig.GetAttributeValues() {
+				dbcAttVal := attVal.ToDBC()
+				dbcAttVal.MessageID = msg.ID.ToDBC()
+				dbcAttVal.SignalName = sig.Name
+				dbcFile.AttributeValues = append(dbcFile.AttributeValues, dbcAttVal)
+			}
+		}
+	}
+
+	for _, msg := range c.Messages {
+		for _, sig := range msg.Signals {
+			if len(sig.MapValues) == 0 {
+				continue
+			}
+
+			dbcEnc := &dbc.ValueEncoding{
+				Kind:       dbc.ValueEncodingSignal,
+				MessageID:  msg.ID.ToDBC(),
+				SignalName: sig.Name,
+			}
+			for id, val := range sig.MapValues {
+				dbcEnc.Values = append(dbcEnc.Values, &dbc.ValueDescription{
+					ID:   uint32(id),
+					Name: val,
+				})
+			}
+			dbcFile.ValueEncodings = append(dbcFile.ValueEncodings, dbcEnc)
+		}
+	}
+
+	for _, msg := range c.Messages {
+		for _, muxSig := range msg.multiplexedSignals {
+			dbcExtMux := &dbc.ExtendedMux{
+				MessageID:       msg.ID.ToDBC(),
+				MultiplexedName: muxSig.Name,
+				MultiplexorName: muxSig.Multiplexor.Name,
+				Ranges:          []*dbc.ExtendedMuxRange{},
+			}
+			for _, index := range muxSig.MuxIndexes {
+				dbcExtMux.Ranges = append(dbcExtMux.Ranges, &dbc.ExtendedMuxRange{
+					From: uint32(index),
+					To:   uint32(index),
+				})
+			}
+			dbcFile.ExtendedMuxes = append(dbcFile.ExtendedMuxes, dbcExtMux)
+		}
+	}
+
+	_, err = wFile.WriteString(writer.Write(dbcFile))
 	return err
 }

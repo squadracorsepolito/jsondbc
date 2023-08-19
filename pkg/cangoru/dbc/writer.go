@@ -51,7 +51,7 @@ func (w *Writer) formatInt(val int) string {
 }
 
 func (w *Writer) formatHexInt(val int) string {
-	return strconv.FormatInt(int64(val), 16)
+	return "0x" + strconv.FormatInt(int64(val), 16)
 }
 
 func (w *Writer) formatUint(val uint32) string {
@@ -133,7 +133,7 @@ func (w *Writer) writeNodes(nodes *Nodes) {
 }
 
 func (w *Writer) writeValueDescription(valDesc *ValueDescription) {
-	w.print(" %s %s", valDesc.Name, w.formatString(valDesc.Name))
+	w.print(" %s %s", w.formatUint(valDesc.ID), w.formatString(valDesc.Name))
 }
 
 func (w *Writer) writeValueTable(valTable *ValueTable) {
@@ -311,13 +311,15 @@ func (w *Writer) writeAttribute(att *Attribute) {
 		w.print("%s %s %s", getKeyword(keywordAttributeHex), w.formatHexInt(att.MinHex), w.formatHexInt(att.MaxHex))
 	case AttributeString:
 		w.print("%s", getKeyword(keywordAttributeString))
+	case AttributeFloat:
+		w.print("%s %s %s", getKeyword(keywordAttributeFloat), w.formatDouble(att.MinFloat), w.formatDouble(att.MaxFloat))
 	case AttributeEnum:
 		w.print("%s", getKeyword(keywordAttributeEnum))
 		for idx, enumVal := range att.EnumValues {
 			if idx != 0 {
 				w.print(",")
 			}
-			w.print(" %s", enumVal)
+			w.print(" %s", w.formatString(enumVal))
 		}
 	}
 
@@ -374,9 +376,9 @@ func (w *Writer) writeValueEncoding(valEnc *ValueEncoding) {
 
 	switch valEnc.Kind {
 	case ValueEncodingSignal:
-		w.print("%s %s ", w.formatUint(valEnc.MessageID), valEnc.SignalName)
+		w.print("%s %s", w.formatUint(valEnc.MessageID), valEnc.SignalName)
 	case ValueEncodingEnvVar:
-		w.print("%s ", valEnc.EnvVarName)
+		w.print("%s", valEnc.EnvVarName)
 	}
 
 	for _, valDesc := range valEnc.Values {

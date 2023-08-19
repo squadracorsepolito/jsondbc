@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -43,7 +42,6 @@ func (p *Parser) parseHexInt(val string) (int, error) {
 func (p *Parser) parseInt(val string) (int, error) {
 	res, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-		log.Print(err)
 		return 0, err
 	}
 	return int(res), nil
