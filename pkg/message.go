@@ -90,9 +90,9 @@ func (m *Message) validate() error {
 	if m.Length == 0 {
 		return fmt.Errorf("message [%s] length cannot be 0", m.messageName)
 	}
-	if len(m.childSignals) == 0 {
+	/*if len(m.childSignals) == 0 {
 		return fmt.Errorf("message [%s] has no signals", m.messageName)
-	}
+	}*/
 
 	for _, sig := range m.childSignals {
 		if err := sig.validate(); err != nil {

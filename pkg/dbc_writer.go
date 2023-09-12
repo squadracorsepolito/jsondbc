@@ -86,8 +86,10 @@ func (w *DBCWriter) writeBusSpeed(f *file, speed uint32) {
 	strSpeed := ""
 	if speed > 0 {
 		strSpeed = formatUint(speed)
+		f.print(sym.DBCBusSpeed, ":", strSpeed, ":", strSpeed, ",", strSpeed)
+	} else {
+		f.print(sym.DBCBusSpeed, ":")
 	}
-	f.print(sym.DBCBusSpeed, ":", strSpeed, ":", strSpeed, ",", strSpeed)
 	f.print()
 }
 

@@ -22,7 +22,7 @@ var (
 	DBCMessageComment = regexp.MustCompile(`^(?:CM_) *(?:BO_) *(?P<msg_id>\d+) *"(?P<desc>.*)" *;$`)
 	DBCSignalComment  = regexp.MustCompile(`^(?:CM_) *(?:SG_) *(?P<msg_id>\d+) *(?P<sig_name>\w+) *"(?P<desc>.*)" *;$`)
 
-	DBCAttribute = regexp.MustCompile(`^(?:BA_DEF_) *(?P<att_kind>SG_|BU_|BO_)? *"(?P<att_name>\w+)" *(?P<att_type>INT|FLOAT|STRING|ENUM) *(?P<att_data>.*[^;]) *;`)
+	DBCAttribute = regexp.MustCompile(`^(?:BA_DEF_) *(?P<att_kind>SG_|BU_|BO_)? *"(?P<att_name>\w+)" *(?P<att_type>INT|FLOAT|STRING|ENUM)(?:;| *(?P<att_data>.*[^;]) *;)`)
 
 	DBCAttributeDefault = regexp.MustCompile(`^(?:BA_DEF_DEF_) *"(?P<att_name>\w+)" *(?P<att_data>.*[^;]) *;`)
 
