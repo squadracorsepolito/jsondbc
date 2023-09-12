@@ -53,7 +53,7 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	f.print(sym.DBCVersion, formatString(canModel.Version))
 	f.print(dbcHeaders)
 
-	w.writeBusSpeed(f, canModel.Baudrate)
+	w.writeBitTiming(f)
 	w.writeNodes(f, canModel.Nodes)
 
 	for _, msg := range canModel.getMessages() {
@@ -82,14 +82,8 @@ func (w *DBCWriter) Write(file *os.File, canModel *CanModel) error {
 	return nil
 }
 
-func (w *DBCWriter) writeBusSpeed(f *file, speed uint32) {
-	strSpeed := ""
-	if speed > 0 {
-		strSpeed = formatUint(speed)
-		f.print(sym.DBCBusSpeed, ":", strSpeed, ":", strSpeed, ",", strSpeed)
-	} else {
-		f.print(sym.DBCBusSpeed, ":")
-	}
+func (w *DBCWriter) writeBitTiming(f *file) {
+	f.print(sym.DBCBusSpeed, ":")
 	f.print()
 }
 
@@ -216,6 +210,10 @@ func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
 }
 
 func (w *DBCWriter) writeComments(f *file, m *CanModel) {
+	if m.Baudrate > 0 {
+		f.print(sym.DBCComment, formatString(fmt.Sprintf("Baudrate: %s", formatUint(m.Baudrate)))+";")
+	}
+
 	for nodeName, node := range m.Nodes {
 		w.writeNodeComment(f, nodeName, node)
 	}

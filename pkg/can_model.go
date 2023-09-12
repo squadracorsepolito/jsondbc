@@ -19,7 +19,7 @@ type Writer interface {
 // CanModel represents the CAN model.
 type CanModel struct {
 	Version           string                       `json:"version"`
-	Baudrate          uint32                       `json:"baudrate"`
+	Baudrate          uint32                       `json:"baudrate,omitempty"`
 	Nodes             map[string]*Node             `json:"nodes"`
 	GeneralAttributes map[string]*Attribute        `json:"general_attributes"`
 	NodeAttributes    map[string]*NodeAttribute    `json:"node_attributes"`
@@ -29,6 +29,25 @@ type CanModel struct {
 }
 
 func (c *CanModel) Init() {
+	baudrateAtt, hasBaudrateAtt := c.GeneralAttributes[sym.BaudrateAttribute]
+	if hasBaudrateAtt {
+		c.Baudrate = uint32(baudrateAtt.Int.Default)
+		delete(c.GeneralAttributes, sym.BaudrateAttribute)
+	} else {
+		if c.Baudrate > 0 {
+			if c.GeneralAttributes == nil {
+				c.GeneralAttributes = make(map[string]*Attribute)
+			}
+			c.GeneralAttributes[sym.BaudrateAttribute] = &Attribute{
+				Int: &AttributeInt{
+					Default: int(c.Baudrate),
+					From:    0,
+					To:      int(c.Baudrate),
+				},
+			}
+		}
+	}
+
 	for attName, att := range c.GeneralAttributes {
 		att.initAttribute(attName)
 	}
