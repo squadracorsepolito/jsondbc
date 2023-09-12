@@ -1,6 +1,6 @@
 module github.com/squadracorsepolito/jsondbc
 
-go 1.21
+go 1.20
 
 require (
 	github.com/spf13/cobra v1.7.0
