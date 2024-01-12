@@ -216,6 +216,8 @@ func (r *textReader) read() (*CanModel, error) {
 		return nil, err
 	}
 
+	canModel.source = sourceTypeDBC
+
 	return canModel, nil
 }
 

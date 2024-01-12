@@ -58,6 +58,8 @@
         "EEC1": {
             "id": 2364540158,
             "period_ms": 100,
+            "cycle_time": 10,
+            "send_type": "IfActive",
             "description": "desc 0",
             "attributes": {
                 "VFrameFormat": "StandardCAN"
@@ -87,6 +89,7 @@
                 },
                 "Engine_Status": {
                     "description": "desc 2",
+                    "send_type": "Cyclic",
                     "start_bit": 0,
                     "size": 2,
                     "endianness": "little",

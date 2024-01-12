@@ -68,5 +68,7 @@ func (r *JsonReader) Read(file *os.File) (*CanModel, error) {
 		return nil, err
 	}
 
+	canModel.source = sourceTypeJSON
+
 	return canModel, nil
 }

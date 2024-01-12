@@ -3,8 +3,11 @@ package pkg
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 )
 
@@ -89,4 +92,27 @@ func applyRegex(r *regexp.Regexp, str string) ([]string, error) {
 		return nil, errRegexNoMatch
 	}
 	return matches[0], nil
+}
+
+// Checks if a string is a valid value of a custom enum attribute.
+// It returns the current string if true, otherwise the default value (custom_attribute_values[0])
+func checkCustomEnumAttribute(curr, attName string, values []string, location string) string {
+	if !slices.Contains(values, curr) {
+		def := values[0]
+		log.Printf("WARNING: unknown %s '%s', valid are %v, using default value %s; in %s", attName, curr, values, def, location)
+		return def
+	}
+
+	return curr
+}
+
+// Appends the formatted string to str
+func appendString(str, format string, a ...any) string {
+	appStr := fmt.Sprintf(format, a...)
+	if len(str) > 0 {
+		str += " " + appStr
+	} else {
+		str = appStr
+	}
+	return str
 }

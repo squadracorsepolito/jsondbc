@@ -11,20 +11,26 @@ import (
 // Message represents a CAN message.
 type Message struct {
 	*AttributeAssignments
-	ID          uint32             `json:"id"`
-	Description string             `json:"description,omitempty"`
-	Period      uint32             `json:"period_ms,omitempty"`
-	Length      uint32             `json:"length"`
-	Sender      string             `json:"sender,omitempty"`
-	Signals     map[string]*Signal `json:"signals"`
+	ID          uint32 `json:"id"`
+	Description string `json:"description,omitempty"`
+
+	// Custom attributes
+	CycleTime int    `json:"cycle_time,omitempty"`
+	SendType  string `json:"send_type,omitempty"`
+
+	Period  uint32             `json:"period_ms,omitempty"`
+	Length  uint32             `json:"length"`
+	Sender  string             `json:"sender,omitempty"`
+	Signals map[string]*Signal `json:"signals"`
 
 	messageName  string
 	childSignals map[string]*Signal
 	fromDBC      bool
+	source       sourceType
 }
 
 func (m *Message) initSignalRec(sigName string, sig *Signal) {
-	sig.initSignal(sigName)
+	sig.initSignal(sigName, m.source)
 	m.childSignals[sigName] = sig
 	sig.isMultiplexed = true
 	if !sig.isMultiplexor {
@@ -36,8 +42,9 @@ func (m *Message) initSignalRec(sigName string, sig *Signal) {
 	}
 }
 
-func (m *Message) initMessage(msgName string) {
+func (m *Message) initMessage(msgName string, source sourceType) {
 	m.messageName = msgName
+	m.source = source
 
 	if m.AttributeAssignments == nil {
 		m.AttributeAssignments = &AttributeAssignments{
@@ -60,10 +67,12 @@ func (m *Message) initMessage(msgName string) {
 		delete(m.AttributeAssignments.Attributes, sym.MsgPeriodAttribute)
 	}
 
+	m.handleCustomAttributes()
+
 	m.childSignals = make(map[string]*Signal)
 
 	for sigName, sig := range m.Signals {
-		sig.initSignal(sigName)
+		sig.initSignal(sigName, m.source)
 		m.childSignals[sigName] = sig
 		if !sig.isMultiplexor {
 			continue
@@ -74,6 +83,45 @@ func (m *Message) initMessage(msgName string) {
 		}
 	}
 
+}
+
+func (m *Message) appendDescription(format string, a ...any) {
+	m.Description = appendString(m.Description, format, a...)
+}
+
+func (m *Message) handleCustomAttributes() {
+	location := fmt.Sprintf("signal '%s'", m.messageName)
+
+	switch m.source {
+	case sourceTypeJSON:
+		// MsgCycleTime
+		if m.CycleTime > 0 {
+			m.AttributeAssignments.Attributes[sym.MsgCycleTime] = float64(m.CycleTime)
+			m.appendDescription("(cycle_time: %d)", m.CycleTime)
+		}
+
+		// MsgSendType
+		if len(m.SendType) > 0 {
+			tmpST := checkCustomEnumAttribute(m.SendType, "message.send_type", sym.MsgSendTypeValues, location)
+			m.AttributeAssignments.Attributes[sym.MsgSendType] = tmpST
+			m.appendDescription("(send_type: %s)", tmpST)
+		}
+
+	case sourceTypeDBC:
+		// MsgCycleTime
+		ctAtt, hasCT := m.AttributeAssignments.Attributes[sym.MsgCycleTime]
+		if hasCT {
+			m.CycleTime = ctAtt.(int)
+			delete(m.AttributeAssignments.Attributes, sym.MsgCycleTime)
+		}
+
+		// MsgSendType
+		stAtt, hasST := m.AttributeAssignments.Attributes[sym.MsgSendType]
+		if hasST {
+			m.SendType = checkCustomEnumAttribute(stAtt.(string), sym.MsgSendType, sym.MsgSendTypeValues, location)
+			delete(m.AttributeAssignments.Attributes, sym.MsgSendType)
+		}
+	}
 }
 
 // HasDescription returns true if the message has a description.

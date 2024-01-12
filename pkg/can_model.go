@@ -8,6 +8,13 @@ import (
 	"github.com/squadracorsepolito/jsondbc/pkg/sym"
 )
 
+type sourceType int
+
+const (
+	sourceTypeJSON sourceType = iota
+	sourceTypeDBC
+)
+
 type Reader interface {
 	Read(file *os.File) (*CanModel, error)
 }
@@ -26,6 +33,8 @@ type CanModel struct {
 	MessageAttributes map[string]*MessageAttribute `json:"message_attributes"`
 	SignalAttributes  map[string]*SignalAttribute  `json:"signal_attributes"`
 	Messages          map[string]*Message          `json:"messages"`
+
+	source sourceType
 }
 
 func (c *CanModel) Init() {
@@ -72,6 +81,17 @@ func (c *CanModel) Init() {
 			},
 		}
 	}
+
+	if c.MessageAttributes == nil {
+		c.MessageAttributes = make(map[string]*MessageAttribute)
+	}
+
+	if c.SignalAttributes == nil {
+		c.SignalAttributes = make(map[string]*SignalAttribute)
+	}
+
+	c.handleCustomAttributes()
+
 	for attName, att := range c.MessageAttributes {
 		att.initMessageAttribute(attName)
 	}
@@ -85,7 +105,7 @@ func (c *CanModel) Init() {
 	}
 
 	for msgName, msg := range c.Messages {
-		msg.initMessage(msgName)
+		msg.initMessage(msgName, c.source)
 	}
 
 	for _, node := range c.Nodes {
@@ -108,6 +128,54 @@ func (c *CanModel) Init() {
 					sigAtt.assignSignal(msg.ID, sig)
 				}
 			}
+		}
+	}
+}
+
+func (c *CanModel) handleCustomAttributes() {
+	switch c.source {
+	case sourceTypeJSON:
+		// MsgCycleTime
+		c.MessageAttributes[sym.MsgCycleTime] = &MessageAttribute{
+			Attribute: &Attribute{
+				Int: &AttributeInt{0, 0, 1000},
+			},
+		}
+
+		// MsgSendType
+		c.MessageAttributes[sym.MsgSendType] = &MessageAttribute{
+			Attribute: &Attribute{
+				Enum: &AttributeEnum{
+					Default: sym.MsgSendTypeValues[0],
+					Values:  sym.MsgSendTypeValues,
+				},
+			},
+		}
+
+		// SigSendType
+		c.SignalAttributes[sym.SigSendType] = &SignalAttribute{
+			Attribute: &Attribute{
+				Enum: &AttributeEnum{
+					Default: sym.SigSendTypeValues[0],
+					Values:  sym.SigSendTypeValues,
+				},
+			},
+		}
+
+	case sourceTypeDBC:
+		// MsgCycleTime
+		if _, ok := c.MessageAttributes[sym.MsgCycleTime]; ok {
+			delete(c.MessageAttributes, sym.MsgCycleTime)
+		}
+
+		// MsgSendType
+		if _, ok := c.MessageAttributes[sym.MsgSendType]; ok {
+			delete(c.MessageAttributes, sym.MsgSendType)
+		}
+
+		// SigSendType
+		if _, ok := c.SignalAttributes[sym.SigSendType]; ok {
+			delete(c.SignalAttributes, sym.SigSendType)
 		}
 	}
 }

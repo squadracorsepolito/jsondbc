@@ -56,6 +56,7 @@
                                         "TestFloatAtt": 10.5
                                     },
                                     "description": "desc VehicleSpeed",
+                                    "send_type": "Cyclic",
                                     "mux_switch": 13,
                                     "start_bit": 31,
                                     "size": 8,

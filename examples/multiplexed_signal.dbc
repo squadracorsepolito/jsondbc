@@ -46,17 +46,24 @@ CM_ BO_ 2024 "desc OBD2";
 CM_ SG_ 2024 Service "desc Service";
 CM_ SG_ 2024 MultiplexedSignalName "desc S2";
 CM_ SG_ 2024 ExtendedMuxSignalName "desc S1";
+CM_ SG_ 2024 VehicleSpeed "desc VehicleSpeed (send_type: Cyclic)";
 CM_ SG_ 2024 ThrottlePosition "desc ThrottlePosition";
-CM_ SG_ 2024 VehicleSpeed "desc VehicleSpeed";
 
 BA_DEF_ BO_ "MsgPeriodMS" INT 0 65535;
-BA_DEF_ SG_ "TestFloatAtt" FLOAT 0 25.75;
+BA_DEF_ BO_ "GenMsgCycleTime" INT 0 1000;
+BA_DEF_ BO_ "GenMsgSendType" ENUM "NoMsgSendType","Cyclic","IfActive","cyclicIfActive","NotUsed";
 BA_DEF_ SG_ "SPN" INT 0 524287;
+BA_DEF_ SG_ "TestFloatAtt" FLOAT 0 25.75;
+BA_DEF_ SG_ "GenSigSendType" ENUM "NoSigSendType","Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NotUsed";
 BA_DEF_DEF_ "MsgPeriodMS" 0;
+BA_DEF_DEF_ "GenMsgCycleTime" 0;
+BA_DEF_DEF_ "GenMsgSendType" "NoMsgSendType";
 BA_DEF_DEF_ "SPN" 0;
 BA_DEF_DEF_ "TestFloatAtt" 1.5;
-BA_ "TestFloatAtt" SG_ 2024 VehicleSpeed 10.5;
+BA_DEF_DEF_ "GenSigSendType" "NoSigSendType";
 BA_ "SPN" SG_ 2024 VehicleSpeed 190;
+BA_ "TestFloatAtt" SG_ 2024 VehicleSpeed 10.5;
+BA_ "GenSigSendType" SG_ 2024 VehicleSpeed 1;
 
 SG_MUL_VAL_ 2024 MultiplexedSignalName Service 2-2;
 SG_MUL_VAL_ 2024 VehicleSpeed ExtendedMuxSignalName 13-13;
