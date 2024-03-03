@@ -47,6 +47,10 @@ func (s *Signal) initSignal(sigName string, source sourceType) {
 
 	s.handleCustomAttributes()
 
+	if s.Scale == 0 {
+		s.Scale = 1
+	}
+
 	if len(s.Endianness) > 0 {
 		switch s.Endianness {
 		case "big":
