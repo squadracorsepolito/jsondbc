@@ -116,6 +116,7 @@ func (c *CanModel) Init() {
 			}
 		}
 	}
+
 	for _, msg := range c.Messages {
 		for attName := range msg.Attributes {
 			if msgAtt, ok := c.MessageAttributes[attName]; ok {
@@ -129,13 +130,14 @@ func (c *CanModel) Init() {
 					sigAtt.assignSignal(msg.ID, sig)
 				}
 
-				// check if signal has an enum_ref, if so, attach the global signal_enum
-				if len(sig.Enum) == 0 && len(sig.EnumRef) > 0 {
-					if enum, ok := c.SignalEnums[sig.EnumRef]; ok {
-						sig.Enum = enum
-					} else {
-						fmt.Printf("WARNING: signal '%s' -> enum_ref '%s' is not defined in global signal enums -> SKIPPED\n", sig.signalName, sig.EnumRef)
-					}
+			}
+
+			// check if signal has an enum_ref, if so, attach the global signal_enum
+			if len(sig.Enum) == 0 && len(sig.EnumRef) > 0 {
+				if enum, ok := c.SignalEnums[sig.EnumRef]; ok {
+					sig.Enum = enum
+				} else {
+					fmt.Printf("WARNING: signal '%s' -> enum_ref '%s' is not defined in global signal enums -> SKIPPED\n", sig.signalName, sig.EnumRef)
 				}
 			}
 		}
