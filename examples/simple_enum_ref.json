@@ -1,0 +1,112 @@
+{
+    "version": "1.0",
+    "baudrate": 1000000,
+    "general_attributes": {
+        "FloatAtt": {
+            "float": {
+                "default": 1.5,
+                "from": 0.0,
+                "to": 25.75
+            }
+        }
+    },
+    "node_attributes": {
+        "TestString": {
+            "string": {}
+        }
+    },
+    "message_attributes": {
+        "VFrameFormat": {
+            "enum": {
+                "values": [
+                    "StandardCAN",
+                    "ExtendedCAN",
+                    "reserved",
+                    "J1939PG"
+                ],
+                "default": "J1939PG"
+            }
+        }
+    },
+    "signal_attributes": {
+        "SPN": {
+            "int": {
+                "from": 0,
+                "to": 524287
+            }
+        },
+        "TestFloatAtt": {
+            "float": {
+                "default": 1.5,
+                "from": 0.0,
+                "to": 25.75
+            }
+        }
+    },
+    "nodes": {
+        "Node1": {
+            "description": "Node1 desc"
+        },
+        "Node2": {
+            "description": "Node2 desc",
+            "attributes": {
+                "TestString": "test"
+            }
+        }
+    },
+    "signal_enums": {
+        "Status_Enum": {
+            "Off": 0,
+            "Idle": 1,
+            "Running": 2
+        }
+    },
+    "messages": {
+        "EEC1": {
+            "id": 2364540158,
+            "period_ms": 100,
+            "cycle_time": 10,
+            "send_type": "IfActive",
+            "description": "desc 0",
+            "attributes": {
+                "VFrameFormat": "StandardCAN"
+            },
+            "length": 8,
+            "sender": "",
+            "signals": {
+                "Engine_Speed": {
+                    "description": "desc 1",
+                    "attributes": {
+                        "SPN": 190,
+                        "TestFloatAtt": 10.5
+                    },
+                    "start_bit": 24,
+                    "size": 16,
+                    "endianness": "big",
+                    "signed": false,
+                    "unit": "rpm",
+                    "receivers": [
+                        "Node1",
+                        "Node2"
+                    ],
+                    "scale": 0.125,
+                    "offset": 0,
+                    "min": 0,
+                    "max": 8031.875
+                },
+                "Engine_Status": {
+                    "description": "desc 2",
+                    "send_type": "Cyclic",
+                    "start_bit": 0,
+                    "size": 2,
+                    "endianness": "little",
+                    "signed": false,
+                    "unit": "status",
+                    "receivers": [],
+                    "enum_ref": "Status_Enum",
+                    "max": 2
+                }
+            }
+        }
+    }
+}

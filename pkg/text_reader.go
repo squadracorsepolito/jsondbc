@@ -495,7 +495,7 @@ func (r *textReader) readSignal(lineIdx int) (*Signal, error) {
 		Offset:     offset,
 		Min:        min,
 		Max:        max,
-		Bitmap:     make(map[string]uint32),
+		Enum:       make(map[string]uint32),
 		MuxGroup:   make(map[string]*Signal),
 		MuxSwitch:  muxSwitch,
 		AttributeAssignments: &AttributeAssignments{
@@ -540,7 +540,7 @@ func (r *textReader) handleBitmapDefinitions(lineIdxs []int) error {
 
 func (r *textReader) setBitmapDefinitionRec(sig *Signal, bitmapDef *bitmapDefinition) bool {
 	if sig.signalName == bitmapDef.sigName {
-		sig.Bitmap = bitmapDef.bitmap
+		sig.Enum = bitmapDef.bitmap
 		return true
 	}
 

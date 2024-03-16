@@ -25,7 +25,8 @@ type Signal struct {
 	Offset     float64            `json:"offset"`
 	Min        float64            `json:"min"`
 	Max        float64            `json:"max"`
-	Bitmap     map[string]uint32  `json:"enum,omitempty"`
+	Enum       map[string]uint32  `json:"enum,omitempty"`
+	EnumRef    string             `json:"enum_ref,omitempty"`
 	MuxGroup   map[string]*Signal `json:"mux_group,omitempty"`
 
 	signalName    string
@@ -97,7 +98,7 @@ func (s *Signal) handleCustomAttributes() {
 
 // IsBitmap returns true if the signal is a bitmap.
 func (s *Signal) IsBitmap() bool {
-	return len(s.Bitmap) > 0
+	return len(s.Enum) > 0
 }
 
 // IsMultiplexor returns true if the signal is a multiplexor.

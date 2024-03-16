@@ -33,6 +33,7 @@ type CanModel struct {
 	MessageAttributes map[string]*MessageAttribute `json:"message_attributes"`
 	SignalAttributes  map[string]*SignalAttribute  `json:"signal_attributes"`
 	Messages          map[string]*Message          `json:"messages"`
+	SignalEnums       map[string]map[string]uint32 `json:"signal_enums"`
 
 	source sourceType
 }
@@ -126,6 +127,15 @@ func (c *CanModel) Init() {
 			for sigName := range sig.Attributes {
 				if sigAtt, ok := c.SignalAttributes[sigName]; ok {
 					sigAtt.assignSignal(msg.ID, sig)
+				}
+
+				// check if signal has an enum_ref, if so, attach the global signal_enum
+				if len(sig.Enum) == 0 && len(sig.EnumRef) > 0 {
+					if enum, ok := c.SignalEnums[sig.EnumRef]; ok {
+						sig.Enum = enum
+					} else {
+						fmt.Printf("WARNING: signal '%s' -> enum_ref '%s' is not defined in global signal enums -> SKIPPED\n", sig.signalName, sig.EnumRef)
+					}
 				}
 			}
 		}

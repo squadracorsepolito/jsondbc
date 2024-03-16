@@ -195,7 +195,7 @@ func (w *DBCWriter) writeBitmaps(f *file, m *CanModel) {
 			if sig.IsBitmap() {
 				bitmap := ""
 				first := true
-				for name, val := range sig.Bitmap {
+				for name, val := range sig.Enum {
 					if first {
 						bitmap += formatUint(val) + " " + formatString(name)
 						first = false

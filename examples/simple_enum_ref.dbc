@@ -1,0 +1,77 @@
+VERSION "1.0"
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_ :
+
+BU_ : Node1 Node2
+
+BO_ 2364540158 EEC1: 8 Vector__XXX
+	SG_ Engine_Status : 0|2@1+ (1,0) [0|2] "status" Vector__XXX
+	SG_ Engine_Speed : 24|16@0+ (0.125,0) [0|8031.875] "rpm" Node1,Node2
+
+CM_ "Baudrate: 1000000";
+CM_ BU_ Node1 "Node1 desc";
+CM_ BU_ Node2 "Node2 desc";
+CM_ BO_ 2364540158 "desc 0 (period: 100 ms) (cycle_time: 10) (send_type: IfActive)";
+CM_ SG_ 2364540158 Engine_Speed "desc 1";
+CM_ SG_ 2364540158 Engine_Status "desc 2 (send_type: Cyclic)";
+
+BA_DEF_ "FloatAtt" FLOAT 0 25.75;
+BA_DEF_ "Baudrate" INT 0 1000000;
+BA_DEF_ BU_ "TestString" STRING ;
+BA_DEF_ BO_ "VFrameFormat" ENUM "StandardCAN","ExtendedCAN","reserved","J1939PG";
+BA_DEF_ BO_ "MsgPeriodMS" INT 0 65535;
+BA_DEF_ BO_ "GenMsgCycleTime" INT 0 1000;
+BA_DEF_ BO_ "GenMsgSendType" ENUM "NoMsgSendType","Cyclic","IfActive","cyclicIfActive","NotUsed";
+BA_DEF_ SG_ "SPN" INT 0 524287;
+BA_DEF_ SG_ "TestFloatAtt" FLOAT 0 25.75;
+BA_DEF_ SG_ "GenSigSendType" ENUM "NoSigSendType","Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NotUsed";
+BA_DEF_DEF_ "FloatAtt" 1.5;
+BA_DEF_DEF_ "Baudrate" 1000000;
+BA_DEF_DEF_ "TestString" "";
+BA_DEF_DEF_ "VFrameFormat" "J1939PG";
+BA_DEF_DEF_ "MsgPeriodMS" 0;
+BA_DEF_DEF_ "GenMsgCycleTime" 0;
+BA_DEF_DEF_ "GenMsgSendType" "NoMsgSendType";
+BA_DEF_DEF_ "SPN" 0;
+BA_DEF_DEF_ "TestFloatAtt" 1.5;
+BA_DEF_DEF_ "GenSigSendType" "NoSigSendType";
+BA_ "TestString" BU_ Node2 "test";
+BA_ "VFrameFormat" BO_ 2364540158 0;
+BA_ "MsgPeriodMS" BO_ 2364540158 100;
+BA_ "GenMsgCycleTime" BO_ 2364540158 10;
+BA_ "GenMsgSendType" BO_ 2364540158 2;
+BA_ "SPN" SG_ 2364540158 Engine_Speed 190;
+BA_ "TestFloatAtt" SG_ 2364540158 Engine_Speed 10.5;
+BA_ "GenSigSendType" SG_ 2364540158 Engine_Status 1;
+
+VAL_ 2364540158 Engine_Status 1 "Idle" 2 "Running" 0 "Off";
