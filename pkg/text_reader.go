@@ -347,7 +347,7 @@ func (r *textReader) readMessage(lineIdx int) (*Message, error) {
 	isExtMux := false
 	extMuxSigs := make(map[string]*Signal)
 
-	for nextLineIdx := lineIdx + 1; true; nextLineIdx++ {
+	for nextLineIdx := lineIdx + 1; nextLineIdx < len(r.lines); nextLineIdx++ {
 		_, ok := applyReg(r.msgEndReg, r.lines[nextLineIdx])
 		if ok {
 			break
