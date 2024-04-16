@@ -90,7 +90,7 @@ func (m *Message) appendDescription(format string, a ...any) {
 }
 
 func (m *Message) handleCustomAttributes() {
-	location := fmt.Sprintf("signal '%s'", m.messageName)
+	location := fmt.Sprintf("message '%s'", m.messageName)
 
 	switch m.source {
 	case sourceTypeJSON:

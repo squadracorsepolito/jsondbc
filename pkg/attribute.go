@@ -1,6 +1,8 @@
 package pkg
 
-import "github.com/squadracorsepolito/jsondbc/pkg/sym"
+import (
+	"github.com/squadracorsepolito/jsondbc/pkg/sym"
+)
 
 type attributeKind uint8
 
@@ -220,6 +222,7 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 				return formatInt(idx)
 			}
 		}
+		return "0"
 	}
 
 	return ""

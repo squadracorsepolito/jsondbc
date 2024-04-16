@@ -9,7 +9,7 @@ const MsgCycleTime string = "GenMsgCycleTime"
 
 const MsgSendType string = "GenMsgSendType"
 
-var MsgSendTypeValues = []string{"NoMsgSendType", "Cyclic", "IfActive", "cyclicIfActive", "NotUsed"}
+var MsgSendTypeValues = []string{"NoMsgSendType", "Cyclic", "IfActive", "CyclicIfActive", "NotUsed"}
 
 const SigSendType string = "GenSigSendType"
 

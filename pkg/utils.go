@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"slices"
 	"strconv"
+	"strings"
 )
 
 func formatFloat(val float64) string {
@@ -97,13 +97,15 @@ func applyRegex(r *regexp.Regexp, str string) ([]string, error) {
 // Checks if a string is a valid value of a custom enum attribute.
 // It returns the current string if true, otherwise the default value (custom_attribute_values[0])
 func checkCustomEnumAttribute(curr, attName string, values []string, location string) string {
-	if !slices.Contains(values, curr) {
-		def := values[0]
-		log.Printf("WARNING: unknown %s '%s', valid are %v, using default value %s; in %s", attName, curr, values, def, location)
-		return def
+	for _, val := range values {
+		if strings.ToLower(curr) == strings.ToLower(val) {
+			return val
+		}
 	}
 
-	return curr
+	log.Printf("WARNING: unknown %s '%s', valid are %v, using default value %s; in %s", attName, curr, values, values[0], location)
+
+	return values[0]
 }
 
 // Appends the formatted string to str
