@@ -93,7 +93,7 @@ func (w *DBCWriter) writeNodes(f *file, nodes map[string]*Node) {
 		nodeNames = append(nodeNames, nodeName)
 	}
 
-	str := []string{sym.DBCNode, ":"}
+	str := []string{sym.DBCNode + ":"}
 	str = append(str, nodeNames...)
 	f.print(str...)
 	f.print()
@@ -150,7 +150,7 @@ func (w *DBCWriter) writeSignal(f *file, sig *Signal) {
 		muxStr += "M"
 	}
 
-	f.print("\t", sym.DBCSignal, sig.signalName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
+	f.print(" ", sym.DBCSignal, sig.signalName, muxStr, ":", byteDef, multiplier, valueRange, unit, receivers)
 }
 
 func (w *DBCWriter) writeMuxGroup(f *file, messages map[string]*Message) {
