@@ -38,7 +38,7 @@ type CanModel struct {
 	source sourceType
 }
 
-func (c *CanModel) Init() {
+func (c *CanModel) Init() error {
 	baudrateAtt, hasBaudrateAtt := c.GeneralAttributes[sym.BaudrateAttribute]
 	if hasBaudrateAtt {
 		c.Baudrate = uint32(baudrateAtt.Int.Default)
@@ -59,10 +59,14 @@ func (c *CanModel) Init() {
 	}
 
 	for attName, att := range c.GeneralAttributes {
-		att.initAttribute(attName)
+		if err := att.initAttribute(attName); err != nil {
+			return err
+		}
 	}
 	for attName, att := range c.NodeAttributes {
-		att.initNodeAttribute(attName)
+		if err := att.initNodeAttribute(attName); err != nil {
+			return err
+		}
 	}
 
 	_, hasFreqAtt := c.MessageAttributes[sym.MsgPeriodAttribute]
@@ -94,11 +98,15 @@ func (c *CanModel) Init() {
 	c.handleCustomAttributes()
 
 	for attName, att := range c.MessageAttributes {
-		att.initMessageAttribute(attName)
+		if err := att.initMessageAttribute(attName); err != nil {
+			return err
+		}
 	}
 
 	for attName, att := range c.SignalAttributes {
-		att.initSignalAttribute(attName)
+		if err := att.initSignalAttribute(attName); err != nil {
+			return err
+		}
 	}
 
 	for nodeName, node := range c.Nodes {
@@ -142,6 +150,7 @@ func (c *CanModel) Init() {
 			}
 		}
 	}
+	return nil
 }
 
 func (c *CanModel) handleCustomAttributes() {

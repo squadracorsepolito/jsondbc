@@ -1,6 +1,9 @@
 package pkg
 
 import (
+	"fmt"
+
+	"github.com/squadracorsepolito/acmelib"
 	"github.com/squadracorsepolito/jsondbc/pkg/sym"
 )
 
@@ -33,29 +36,29 @@ type Attribute struct {
 	attributeType attributeType
 }
 
-func (a *Attribute) initAttribute(attName string) {
+func (a *Attribute) initAttribute(attName string) error {
 	a.attributeName = attName
 
 	if a.Int != nil {
 		a.attributeType = attributeTypeInt
-		return
+		return a.Int.validate(attName)
 	}
 
 	if a.String != nil {
 		a.attributeType = attributeTypeString
-		return
+		return nil
 	}
 
 	if a.Enum != nil {
 		a.attributeType = attributeTypeEnum
-		a.Enum.initAttributeEnum()
-		return
+		return a.Enum.initAttributeEnum(attName)
 	}
 
 	if a.Float != nil {
 		a.attributeType = attributeTypeFloat
-		return
+		return a.Float.validate(attName)
 	}
+	return nil
 }
 
 type AttributeInt struct {
@@ -64,10 +67,24 @@ type AttributeInt struct {
 	To      int `json:"to"`
 }
 
+func (ai *AttributeInt) validate(name string) error {
+	if _, err := acmelib.NewIntegerAttribute(name, ai.Default, ai.From, ai.To); err != nil {
+		return err
+	}
+	return nil
+}
+
 type AttributeFloat struct {
 	Default float64 `json:"default"`
 	From    float64 `json:"from"`
 	To      float64 `json:"to"`
+}
+
+func (af *AttributeFloat) validate(name string) error {
+	if _, err := acmelib.NewFloatAttribute(name, af.Default, af.From, af.To); err != nil {
+		return err
+	}
+	return nil
 }
 
 type AttributeString struct {
@@ -81,19 +98,26 @@ type AttributeEnum struct {
 	defaultIdx int
 }
 
-func (ae *AttributeEnum) initAttributeEnum() {
+func (ae *AttributeEnum) initAttributeEnum(name string) error {
+
+	acmelibEnumAttr, err := acmelib.NewEnumAttribute(name, ae.Values...)
+	if err != nil {
+		return fmt.Errorf("error validating enum attribute %s: %w", name, err)
+	}
+
 	ae.defaultIdx = 0
 
 	if ae.Default == "" {
-		return
+		return nil
 	}
 
-	for idx, value := range ae.Values {
+	for idx, value := range acmelibEnumAttr.Values() {
 		if value == ae.Default {
 			ae.defaultIdx = idx
-			return
+			return nil
 		}
 	}
+	return fmt.Errorf("attribute %s: default value %q is not one of the declared values %v", name, ae.Default, ae.Values)
 }
 
 type NodeAttribute struct {
@@ -110,12 +134,12 @@ func newNodeAttribute(att *Attribute) *NodeAttribute {
 	}
 }
 
-func (na *NodeAttribute) initNodeAttribute(attName string) {
+func (na *NodeAttribute) initNodeAttribute(attName string) error {
 	na.attributeKind = attributeKindNode
 	if na.assignedNodes == nil {
 		na.assignedNodes = make(map[string]*Node)
 	}
-	na.initAttribute(attName)
+	return na.initAttribute(attName)
 }
 
 func (na *NodeAttribute) asAttribute() *Attribute {
@@ -140,12 +164,12 @@ func newMessageAttribute(att *Attribute) *MessageAttribute {
 	}
 }
 
-func (ma *MessageAttribute) initMessageAttribute(attName string) {
+func (ma *MessageAttribute) initMessageAttribute(attName string) error {
 	ma.attributeKind = attributeKindMessage
 	if ma.assignedMessages == nil {
 		ma.assignedMessages = make(map[uint32]*Message)
 	}
-	ma.initAttribute(attName)
+	return ma.initAttribute(attName)
 }
 
 func (ma *MessageAttribute) asAttribute() *Attribute {
@@ -170,12 +194,12 @@ func newSignalAttribute(att *Attribute) *SignalAttribute {
 	}
 }
 
-func (sa *SignalAttribute) initSignalAttribute(attName string) {
+func (sa *SignalAttribute) initSignalAttribute(attName string) error {
 	sa.attributeKind = attributeKindSignal
 	if sa.assignedSignals == nil {
 		sa.assignedSignals = make(map[uint32]map[string]*Signal)
 	}
-	sa.initAttribute(attName)
+	return sa.initAttribute(attName)
 }
 
 func (sa *SignalAttribute) asAttribute() *Attribute {
