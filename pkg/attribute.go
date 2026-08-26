@@ -1,10 +1,11 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
+	"math"
 
 	"github.com/squadracorsepolito/acmelib"
-	"github.com/squadracorsepolito/jsondbc/pkg/sym"
 )
 
 type attributeKind uint8
@@ -59,6 +60,55 @@ func (a *Attribute) initAttribute(attName string) error {
 		return a.Float.validate(attName)
 	}
 	return nil
+}
+
+func (a *Attribute) validateValue(value any) error {
+	var acmeAtt acmelib.Attribute
+	var err error
+	switch a.attributeType {
+	case attributeTypeInt:
+		acmeAtt, err = acmelib.NewIntegerAttribute(a.attributeName, a.Int.Default, a.Int.From, a.Int.To)
+	case attributeTypeFloat:
+		acmeAtt, err = acmelib.NewFloatAttribute(a.attributeName, a.Float.Default, a.Float.From, a.Float.To)
+	case attributeTypeEnum:
+		acmeAtt, err = acmelib.NewEnumAttribute(a.attributeName, a.Enum.Values...)
+	case attributeTypeString:
+		acmeAtt = acmelib.NewStringAttribute(a.attributeName, a.String.Default)
+	}
+	if err != nil {
+		return fmt.Errorf("error validating attribute %s: %w", a.attributeName, err)
+	}
+	host := acmelib.NewNode("attribute_value_validation", 0, 0)
+	if err := host.AssignAttribute(acmeAtt, value); err != nil {
+		return a.describeValueError(value, err)
+	}
+	return nil
+}
+
+// describeValueError unwraps the acmelib validation error and rephrases it
+// against the attribute definition, dropping the throwaway-host entity details.
+func (a *Attribute) describeValueError(value any, err error) error {
+	var valErr *acmelib.AttributeValueError
+	if !errors.As(err, &valErr) {
+		return fmt.Errorf("error validating attribute %s: %w", a.attributeName, err)
+	}
+
+	switch {
+	case errors.Is(valErr.Err, acmelib.ErrOutOfBounds) && a.attributeType == attributeTypeInt:
+		return fmt.Errorf("attribute %q: value %v is out of bounds [%d, %d]",
+			a.attributeName, value, a.Int.From, a.Int.To)
+
+	case errors.Is(valErr.Err, acmelib.ErrOutOfBounds) && a.attributeType == attributeTypeFloat:
+		return fmt.Errorf("attribute %q: value %v is out of bounds [%g, %g]",
+			a.attributeName, value, a.Float.From, a.Float.To)
+
+	case errors.Is(valErr.Err, acmelib.ErrNotFound) && a.attributeType == attributeTypeEnum:
+		return fmt.Errorf("attribute %q: value %q is not one of the declared values %v",
+			a.attributeName, value, a.Enum.Values)
+
+	default:
+		return fmt.Errorf("attribute %q: invalid value %v (%v)", a.attributeName, value, valErr.Err)
+	}
 }
 
 type AttributeInt struct {
@@ -146,8 +196,18 @@ func (na *NodeAttribute) asAttribute() *Attribute {
 	return na.Attribute
 }
 
-func (na *NodeAttribute) assignNode(node *Node) {
+func (na *NodeAttribute) assignNode(node *Node) error {
+	val := node.Attributes[na.attributeName]
+	value, err := normalizeValue(na.attributeName, val, na.attributeType)
+	if err != nil {
+		return err
+	}
+	node.Attributes[na.attributeName] = value
+	if err := na.Attribute.validateValue(value); err != nil {
+		return err
+	}
 	na.assignedNodes[node.nodeName] = node
+	return nil
 }
 
 type MessageAttribute struct {
@@ -176,8 +236,18 @@ func (ma *MessageAttribute) asAttribute() *Attribute {
 	return ma.Attribute
 }
 
-func (ma *MessageAttribute) assignMessage(msg *Message) {
+func (ma *MessageAttribute) assignMessage(msg *Message) error {
+	val := msg.Attributes[ma.attributeName]
+	value, err := normalizeValue(ma.attributeName, val, ma.attributeType)
+	if err != nil {
+		return err
+	}
+	msg.Attributes[ma.attributeName] = value
+	if err := ma.Attribute.validateValue(value); err != nil {
+		return err
+	}
 	ma.assignedMessages[msg.ID] = msg
+	return nil
 }
 
 type SignalAttribute struct {
@@ -206,14 +276,24 @@ func (sa *SignalAttribute) asAttribute() *Attribute {
 	return sa.Attribute
 }
 
-func (sa *SignalAttribute) assignSignal(msgID uint32, signal *Signal) {
+func (sa *SignalAttribute) assignSignal(msgID uint32, signal *Signal) error {
+	val := signal.Attributes[sa.attributeName]
+	value, err := normalizeValue(sa.attributeName, val, sa.attributeType)
+	if err != nil {
+		return err
+	}
+	signal.Attributes[sa.attributeName] = value
+	if err := sa.validateValue(value); err != nil {
+		return err
+	}
 	if msg, ok := sa.assignedSignals[msgID]; ok {
 		msg[signal.signalName] = signal
-		return
+		return nil
 	}
 
 	sa.assignedSignals[msgID] = make(map[string]*Signal)
 	sa.assignedSignals[msgID][signal.signalName] = signal
+	return nil
 }
 
 type AttributeAssignments struct {
@@ -228,10 +308,7 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 
 	switch attType {
 	case attributeTypeInt:
-		if attName == sym.MsgPeriodAttribute {
-			return formatInt(int(att.(uint32)))
-		}
-		return formatInt(int(att.(float64)))
+		return formatInt(att.(int))
 
 	case attributeTypeString:
 		return formatString(att.(string))
@@ -250,4 +327,33 @@ func (aa *AttributeAssignments) getAttributeValue(attName string, attType attrib
 	}
 
 	return ""
+}
+
+func normalizeValue(attName string, value any, attType attributeType) (any, error) {
+	switch attType {
+	case attributeTypeInt:
+		switch v := value.(type) {
+		case int:
+			return v, nil
+		case float64:
+			if v != math.Trunc(v) {
+				return nil, fmt.Errorf("attribute %q: value %v is not an integer", attName, v)
+			}
+			return int(v), nil
+		default:
+			return nil, fmt.Errorf("attribute %q: expected a number got %T (%v)", attName, value, value)
+		}
+
+	case attributeTypeFloat:
+		if v, ok := value.(float64); ok {
+			return v, nil
+		}
+		return nil, fmt.Errorf("attribute %q: expected a float, got %T (%v)", attName, value, value)
+	case attributeTypeString, attributeTypeEnum:
+		if v, ok := value.(string); ok {
+			return v, nil
+		}
+		return nil, fmt.Errorf("attribute %q: expected a string, got %T (%v)", attName, value, value)
+	}
+	return nil, fmt.Errorf("attribute %q: unknown type %v", attName, attType)
 }

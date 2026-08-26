@@ -53,7 +53,7 @@ func (m *Message) initMessage(msgName string, source sourceType) {
 	}
 
 	if !m.fromDBC && m.Period > 0 {
-		m.AttributeAssignments.Attributes[sym.MsgPeriodAttribute] = m.Period
+		m.AttributeAssignments.Attributes[sym.MsgPeriodAttribute] = int(m.Period)
 		perStr := fmt.Sprintf("(period: %d ms)", m.Period)
 		if m.HasDescription() {
 			m.Description += " " + perStr
@@ -96,7 +96,7 @@ func (m *Message) handleCustomAttributes() {
 	case sourceTypeJSON:
 		// MsgCycleTime
 		if m.CycleTime > 0 {
-			m.AttributeAssignments.Attributes[sym.MsgCycleTime] = float64(m.CycleTime)
+			m.AttributeAssignments.Attributes[sym.MsgCycleTime] = m.CycleTime
 			m.appendDescription("(cycle_time: %d)", m.CycleTime)
 		}
 

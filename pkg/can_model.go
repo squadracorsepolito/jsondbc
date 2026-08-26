@@ -120,7 +120,9 @@ func (c *CanModel) Init() error {
 	for _, node := range c.Nodes {
 		for attName := range node.Attributes {
 			if nodeAtt, ok := c.NodeAttributes[attName]; ok {
-				nodeAtt.assignNode(node)
+				if err := nodeAtt.assignNode(node); err != nil {
+					return fmt.Errorf("node %q: %w", node.nodeName, err)
+				}
 			}
 		}
 	}
@@ -128,14 +130,18 @@ func (c *CanModel) Init() error {
 	for _, msg := range c.Messages {
 		for attName := range msg.Attributes {
 			if msgAtt, ok := c.MessageAttributes[attName]; ok {
-				msgAtt.assignMessage(msg)
+				if err := msgAtt.assignMessage(msg); err != nil {
+					return fmt.Errorf("message %q (id %d): %w", msg.messageName, msg.ID, err)
+				}
 			}
 		}
 
 		for _, sig := range msg.childSignals {
 			for sigName := range sig.Attributes {
 				if sigAtt, ok := c.SignalAttributes[sigName]; ok {
-					sigAtt.assignSignal(msg.ID, sig)
+					if err := sigAtt.assignSignal(msg.ID, sig); err != nil {
+						return fmt.Errorf("message %q (id %d) -> signal %q: %w", msg.messageName, msg.ID, sig.signalName, err)
+					}
 				}
 
 			}
